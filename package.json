@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "parcel --no-hmr index.html"
+  },
   "devDependencies": {
     "@types/codemirror": "0.0.61",
     "@types/node": "^10.11.2",

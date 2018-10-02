@@ -1,0 +1,45 @@
+@import 'codemirror';
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+}
+
+main {
+  height: 100%;
+  display: flex;
+}
+
+#left {
+  flex-basis: 100%;
+  flex-grow: 1;
+
+  textarea {
+    opacity: 0;
+  }
+
+  .CodeMirror {
+    height: 100%;
+    font-family: 'Dank Mono', monospace;
+  }
+
+  .CodeMirror-gutters {
+    padding-right: 8px;
+    border-style: none;
+    background: none;
+  }
+}
+
+#right {
+  flex-basis: 100%;
+  flex-grow: 1;
+  background: #eee;
+  overflow-y: scroll;
+
+  pre {
+    margin: 16px;
+  }
+}
