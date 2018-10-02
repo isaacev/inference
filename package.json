@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "@types/codemirror": "0.0.61",
+    "@types/node": "^10.11.2",
+    "node-sass": "^4.9.3",
+    "typescript": "^3.1.1"
+  },
+  "dependencies": {
+    "codemirror": "^5.40.2"
+  }
+}
