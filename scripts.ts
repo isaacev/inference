@@ -4,16 +4,14 @@ import { DEFAULT_TEMPLATE } from './examples'
 import { toTokens } from './lexer'
 import { toTree } from './parser'
 
-const left = document.querySelector('#left #editor') as HTMLTextAreaElement | null
+const left = document.querySelector('#editor') as HTMLTextAreaElement | null
 const right = document.querySelector('#right pre') as HTMLPreElement | null
 
 if (!left || !right) {
   throw new Error('unable to load elements')
 }
 
-const ed = (window as any).ed = CodeMirror.fromTextArea(left, {
-  lineNumbers: true,
-})
+const ed = CodeMirror.fromTextArea(left, { lineNumbers: true })
 
 ed.on('change', () => {
   const val = ed.getValue()
