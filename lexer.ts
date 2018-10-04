@@ -93,6 +93,8 @@ export enum TokenType {
   BlockEnd = 'BLOCK_END',
   Field = 'FIELD',
   Name = 'NAME',
+  Int = 'INT',
+  Str = 'STR',
   Equal = 'EQUAL',
   LeftParen = 'LEFT_PAREN',
   RightParen = 'RIGHT_PAREN',
@@ -189,8 +191,12 @@ const lexInside: LexFn = (cur, toks) => {
       return [cur, lexLeftParen]
     case ')':
       return [cur, lexRightParen]
+    case '"':
+      return [cur, lexStr]
     default:
-      if (cur.accepts(ALPHANUMERIC)) {
+      if (cur.accepts(NUMBERS)) {
+        return [cur, lexInt]
+      } else if (cur.accepts(ALPHANUMERIC)) {
         return [cur, lexName]
       } else {
         toks.push(
@@ -216,6 +222,44 @@ const makeLexerForChar = (val: string, typ: TokenType): LexFn => {
 const lexEqual = makeLexerForChar('=', TokenType.Equal)
 const lexLeftParen = makeLexerForChar('(', TokenType.LeftParen)
 const lexRightParen = makeLexerForChar(')', TokenType.RightParen)
+
+const lexStr: LexFn = (cur, toks) => {
+  let val = ''
+  let esc = false
+  const start = cur.position()
+  cur = cur.advance()
+  while (!cur.isDone() && cur.read() !== '\n') {
+    if (cur.read() === '\\') {
+      esc = true
+      cur = cur.advance()
+      continue
+    } else if (cur.read() === '"') {
+      if (esc) {
+        val += '"'
+        cur = cur.advance()
+        esc = false
+      } else {
+        toks.push(new Token(TokenType.Str, val, start))
+        return [cur.advance(), lexInside]
+      }
+    } else {
+      val += cur.read()
+      cur = cur.advance()
+    }
+  }
+  throw new Error(`unclosed string`)
+}
+
+const lexInt: LexFn = (cur, toks) => {
+  let val = ''
+  const start = cur.position()
+  while (!cur.isDone() && cur.accepts(NUMBERS)) {
+    val += cur.read()
+    cur = cur.advance()
+  }
+  toks.push(new Token(TokenType.Int, val, start))
+  return [cur, lexInside]
+}
 
 const lexName: LexFn = (cur, toks) => {
   let val = ''
