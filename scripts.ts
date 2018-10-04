@@ -1,4 +1,5 @@
 import * as CodeMirror from 'codemirror'
+import * as localforage from 'localforage'
 import { DEFAULT_TEMPLATE } from './examples'
 import { toTokens } from './lexer'
 import { toTree } from './parser'
@@ -16,6 +17,8 @@ const ed = (window as any).ed = CodeMirror.fromTextArea(left, {
 
 ed.on('change', () => {
   const val = ed.getValue()
+  localforage.setItem<string>('template', val)
+
   try {
     const toks = toTokens(val)
     const tree = toTree(toks)
@@ -25,4 +28,10 @@ ed.on('change', () => {
   }
 })
 
-ed.setValue(DEFAULT_TEMPLATE)
+localforage
+  .getItem<string | null>('template')
+  .then(res => ed.setValue(res === null ? DEFAULT_TEMPLATE : res))
+  .catch(err => {
+    console.error(err)
+    ed.setValue(DEFAULT_TEMPLATE)
+  })
