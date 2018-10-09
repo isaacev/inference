@@ -1,4 +1,4 @@
-import { Token, TokenType } from './lexer'
+import { Token, TokenType, Point, Range } from './lexer'
 
 class TokenCursor {
   constructor(private domain: Token[], private pointer: number = 0) {}
@@ -39,7 +39,9 @@ class TokenCursor {
 }
 
 export abstract class Node {
-  public abstract toJSON(): { typ: string }
+  public abstract start(): Point
+  public abstract end(): Point
+  public abstract toJSON(): { typ: string; range: Range }
 }
 
 export class Root extends Node {
@@ -47,35 +49,70 @@ export class Root extends Node {
     super()
   }
 
+  public start() {
+    if (this.children.length > 0) {
+      return this.children[0].start()
+    } else {
+      return { line: 1, column: 1 }
+    }
+  }
+
+  public end() {
+    if (this.children.length > 0) {
+      return this.children[this.children.length - 1].end()
+    } else {
+      return { line: 1, column: 1 }
+    }
+  }
+
   public toJSON() {
     return {
       typ: 'root',
+      range: this.range,
       children: this.children.map(child => child.toJSON()),
     }
   }
 }
 
 export class Text extends Node {
-  constructor(public contents: string) {
+  constructor(public range: Range, public contents: string) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'text',
+      range: this.range,
       contents: this.contents,
     }
   }
 }
 
 export class InlineAction extends Node {
-  constructor(public expr: Expression) {
+  constructor(public range: Range, public expr: Expression) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'inline',
+      range: this.range,
       expr: this.expr,
     }
   }
@@ -83,6 +120,7 @@ export class InlineAction extends Node {
 
 export class BlockAction extends Node {
   constructor(
+    public range: Range,
     public name: string,
     public field: string,
     public children: Node[]
@@ -90,9 +128,18 @@ export class BlockAction extends Node {
     super()
   }
 
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
+  }
+
   public toJSON() {
     return {
       typ: 'block',
+      range: this.range,
       name: this.name,
       field: this.field,
       children: this.children.map(child => child.toJSON()),
@@ -101,18 +148,29 @@ export class BlockAction extends Node {
 }
 
 export abstract class Expression {
+  public abstract start(): Point
+  public abstract end(): Point
   public abstract toJSON(): { typ: string }
   public abstract toString(): string
 }
 
 export class FuncExpression extends Expression {
-  constructor(public name: string, public field: Field) {
+  constructor(public range: Range, public name: string, public field: Field) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'func',
+      range: this.range,
       name: this.name,
       field: this.field,
     }
@@ -124,13 +182,22 @@ export class FuncExpression extends Expression {
 }
 
 export class Str extends Expression {
-  constructor(public value: string) {
+  constructor(public range: Range, public value: string) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'str',
+      range: this.range,
       value: this.value,
     }
   }
@@ -141,13 +208,22 @@ export class Str extends Expression {
 }
 
 export class Int extends Expression {
-  constructor(public value: number) {
+  constructor(public range: Range, public value: number) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'int',
+      range: this.range,
       value: this.value,
     }
   }
@@ -158,13 +234,22 @@ export class Int extends Expression {
 }
 
 export class Field extends Expression {
-  constructor(public path: string) {
+  constructor(public range: Range, public path: string) {
     super()
+  }
+
+  public start() {
+    return this.range[0]
+  }
+
+  public end() {
+    return this.range[1]
   }
 
   public toJSON() {
     return {
       typ: 'field',
+      range: this.range,
       path: this.path,
     }
   }
@@ -205,7 +290,7 @@ const parseAny = (cur: TokenCursor): [TokenCursor, Node] => {
 
 const parseText = (cur: TokenCursor): [TokenCursor, Text] => {
   if (cur.read().typ === TokenType.Text) {
-    return [cur.advance(), new Text(cur.read().val)]
+    return [cur.advance(), new Text(cur.read().range, cur.read().val)]
   } else {
     return unexpectedToken(cur, TokenType.Text)
   }
@@ -215,29 +300,33 @@ const parseAction = (cur: TokenCursor): [TokenCursor, Node] => {
   const [cur1] = cur.require(TokenType.LeftDelim)
   switch (cur1.read().typ) {
     case TokenType.BlockStart:
-      return parseBlockAction(cur1)
+      return parseBlockAction(cur)
     default:
-      return parseInlineAction(cur1)
+      return parseInlineAction(cur)
   }
 }
 
 const parseExpression = (cur: TokenCursor): [TokenCursor, Node] => {
   switch (cur.read().typ) {
     case TokenType.Field:
-      return [cur.advance(), new Field(cur.read().val)]
+      return [cur.advance(), new Field(cur.read().range, cur.read().val)]
     case TokenType.Str:
-      return [cur.advance(), new Str(cur.read().val)]
+      return [cur.advance(), new Str(cur.read().range, cur.read().val)]
     case TokenType.Int:
-      return [cur.advance(), new Int(parseInt(cur.read().val, 10))]
+      return [
+        cur.advance(),
+        new Int(cur.read().range, parseInt(cur.read().val, 10)),
+      ]
     case TokenType.LeftParen:
-      return parseFuncExpression(cur.advance())
+      return parseFuncExpression(cur)
     default:
       return unexpectedToken(cur)
   }
 }
 
 const parseFuncExpression = (cur: TokenCursor): [TokenCursor, Expression] => {
-  let [cur1, name] = cur.require(TokenType.Name)
+  let [cur1, leftParen] = cur.require(TokenType.LeftParen)
+  let [cur2, name] = cur1.require(TokenType.Name)
   // const exprs = [] as Expression[]
   // while (true) {
   //   if (cur1.isDone() || cur1.read().typ === TokenType.EOF) {
@@ -254,40 +343,60 @@ const parseFuncExpression = (cur: TokenCursor): [TokenCursor, Expression] => {
   //   exprs.push(expr)
   // }
 
-  let [cur2, field] = cur1.require(TokenType.Field)
-  let [cur3] = cur2.require(TokenType.RightParen)
-  return [cur3, new FuncExpression(name.val, new Field(field.val))]
+  let [cur3, field] = cur2.require(TokenType.Field)
+  let [cur4, rightParen] = cur3.require(TokenType.RightParen)
+  return [
+    cur4,
+    new FuncExpression(
+      [leftParen.range[0], rightParen.range[1]],
+      name.val,
+      new Field(field.range, field.val)
+    ),
+  ]
 }
 
 const parseInlineAction = (cur: TokenCursor): [TokenCursor, Node] => {
-  const [cur1, expr] = parseExpression(cur)
-  const [cur2] = cur1.require(TokenType.RightDelim)
-  return [cur2, new InlineAction(expr)]
+  const [cur1, leftDelim] = cur.require(TokenType.LeftDelim)
+  const [cur2, expr] = parseExpression(cur1)
+  const [cur3, rightDelim] = cur2.require(TokenType.RightDelim)
+  return [
+    cur3,
+    new InlineAction([leftDelim.range[0], rightDelim.range[1]], expr),
+  ]
 }
 
 const parseBlockAction = (cur: TokenCursor): [TokenCursor, Node] => {
-  const [cur1, start] = cur.require(TokenType.BlockStart)
-  const [cur2, field] = cur1.require(TokenType.Field)
-  let [cur3] = cur2.require(TokenType.RightDelim)
+  const [cur1, leftDelim] = cur.require(TokenType.LeftDelim)
+  const [cur2, start] = cur1.require(TokenType.BlockStart)
+  const [cur3, field] = cur2.require(TokenType.Field)
+  let [cur4] = cur3.require(TokenType.RightDelim)
 
   const children = [] as Node[]
   while (true) {
-    if (cur3.isDone() || cur.read().typ === TokenType.EOF) {
-      return unexpectedToken(cur3)
+    if (cur4.isDone() || cur.read().typ === TokenType.EOF) {
+      return unexpectedToken(cur4)
     }
 
     if (
-      cur3.read().typ === TokenType.LeftDelim &&
-      cur3.advance().read().typ === TokenType.BlockEnd
+      cur4.read().typ === TokenType.LeftDelim &&
+      cur4.advance().read().typ === TokenType.BlockEnd
     ) {
-      const [cur4] = cur3.require(TokenType.LeftDelim)
-      const [cur5] = cur4.require(TokenType.BlockEnd, start.val)
-      const [cur6] = cur5.require(TokenType.RightDelim)
-      return [cur6, new BlockAction(start.val, field.val, children)]
+      const [cur5] = cur4.require(TokenType.LeftDelim)
+      const [cur6] = cur5.require(TokenType.BlockEnd, start.val)
+      const [cur7, rightDelim] = cur6.require(TokenType.RightDelim)
+      return [
+        cur7,
+        new BlockAction(
+          [leftDelim.range[0], rightDelim.range[1]],
+          start.val,
+          field.val,
+          children
+        ),
+      ]
     }
 
-    const [cur4, node] = parseAny(cur3)
-    cur3 = cur4
+    const [cur5, node] = parseAny(cur4)
+    cur4 = cur5
     children.push(node)
   }
 }

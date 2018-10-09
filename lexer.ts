@@ -4,6 +4,10 @@ const LETTERS = LOWER_LETTERS + UPPER_LETTERS
 const NUMBERS = '0123456789'
 const ALPHANUMERIC = LETTERS + NUMBERS + '-_'
 
+export type Point = { line: number; column: number }
+
+export type Range = [Point, Point]
+
 class Cursor {
   constructor(
     private domain: string,
@@ -24,7 +28,7 @@ class Cursor {
     }
   }
 
-  public position() {
+  public position(): Point {
     return { line: this.line, column: this.column }
   }
 
@@ -102,17 +106,8 @@ export enum TokenType {
   Text = 'TEXT',
 }
 
-export interface Token {
-  typ: TokenType
-  val: string
-}
-
 export class Token {
-  constructor(
-    public typ: TokenType,
-    public val: string,
-    public pos: { line: number; column: number }
-  ) {}
+  constructor(public typ: TokenType, public val: string, public range: Range) {}
 
   public toString() {
     const typ = this.typ.toString()
@@ -135,7 +130,7 @@ type LexFn = (cur: Cursor, toks: Token[]) => [Cursor, LexFn | null]
 
 const lexAny: LexFn = (cur, toks) => {
   if (cur.isDone()) {
-    toks.push(new Token(TokenType.EOF, '', cur.position()))
+    toks.push(new Token(TokenType.EOF, '', [cur.position(), cur.position()]))
     return [cur, null]
   } else if (cur.hasPrefix(LEFT_DELIM)) {
     return [cur, lexLeftDelim]
@@ -151,17 +146,25 @@ const lexText: LexFn = (cur, toks) => {
     val += cur.read()
     cur = cur.advance()
   }
-  toks.push(new Token(TokenType.Text, val, start))
+  toks.push(new Token(TokenType.Text, val, [start, cur.position()]))
   return [cur, lexAny]
 }
 
 const lexLeftDelim: LexFn = (cur, toks) => {
   if (cur.hasPrefix(LEFT_DELIM)) {
-    toks.push(new Token(TokenType.LeftDelim, LEFT_DELIM, cur.position()))
+    toks.push(
+      new Token(TokenType.LeftDelim, LEFT_DELIM, [
+        cur.position(),
+        cur.skipPrefix(LEFT_DELIM).position(),
+      ])
+    )
     return [cur.skipPrefix(LEFT_DELIM), lexInside]
   } else {
     toks.push(
-      new Token(TokenType.Error, 'expected left delimiter', cur.position())
+      new Token(TokenType.Error, 'expected left delimiter', [
+        cur.position(),
+        cur.position(),
+      ])
     )
     return [cur, null]
   }
@@ -200,7 +203,10 @@ const lexInside: LexFn = (cur, toks) => {
         return [cur, lexName]
       } else {
         toks.push(
-          new Token(TokenType.Error, 'unexpected character', cur.position())
+          new Token(TokenType.Error, 'unexpected character', [
+            cur.position(),
+            cur.position(),
+          ])
         )
         return [cur, null]
       }
@@ -210,10 +216,15 @@ const lexInside: LexFn = (cur, toks) => {
 const makeLexerForChar = (val: string, typ: TokenType): LexFn => {
   return (cur, toks) => {
     if (cur.read() !== val) {
-      toks.push(new Token(TokenType.Error, `expected '${val}'`, cur.position()))
+      toks.push(
+        new Token(TokenType.Error, `expected '${val}'`, [
+          cur.position(),
+          cur.position(),
+        ])
+      )
       return [cur, null]
     } else {
-      toks.push(new Token(typ, val, cur.position()))
+      toks.push(new Token(typ, val, [cur.position(), cur.advance().position()]))
       return [cur.advance(), lexInside]
     }
   }
@@ -239,7 +250,9 @@ const lexStr: LexFn = (cur, toks) => {
         cur = cur.advance()
         esc = false
       } else {
-        toks.push(new Token(TokenType.Str, val, start))
+        toks.push(
+          new Token(TokenType.Str, val, [start, cur.advance().position()])
+        )
         return [cur.advance(), lexInside]
       }
     } else {
@@ -257,17 +270,18 @@ const lexInt: LexFn = (cur, toks) => {
     val += cur.read()
     cur = cur.advance()
   }
-  toks.push(new Token(TokenType.Int, val, start))
+  toks.push(new Token(TokenType.Int, val, [start, cur.position()]))
   return [cur, lexInside]
 }
 
 const lexName: LexFn = (cur, toks) => {
   let val = ''
+  const start = cur.position()
   while (!cur.isDone() && cur.accepts(ALPHANUMERIC)) {
     val += cur.read()
     cur = cur.advance()
   }
-  toks.push(new Token(TokenType.Name, val, cur.position()))
+  toks.push(new Token(TokenType.Name, val, [start, cur.position()]))
   return [cur, lexInside]
 }
 
@@ -284,7 +298,7 @@ const lexField: LexFn = (cur, toks) => {
   }
 
   if (val.match(/^(\.|(\.\w+)+)$/)) {
-    toks.push(new Token(TokenType.Field, val, start))
+    toks.push(new Token(TokenType.Field, val, [start, cur.position()]))
     return [cur, lexInside]
   } else {
     throw new Error(`invalid field: "${val}"`)
@@ -299,10 +313,12 @@ const lexBlockStart: LexFn = (cur, toks) => {
     cur = cur.advance()
   }
   if (val.length === 0) {
-    toks.push(new Token(TokenType.Error, 'expected block name', start))
+    toks.push(
+      new Token(TokenType.Error, 'expected block name', [start, cur.position()])
+    )
     return [cur, null]
   }
-  toks.push(new Token(TokenType.BlockStart, val, start))
+  toks.push(new Token(TokenType.BlockStart, val, [start, cur.position()]))
   return [cur, lexInside]
 }
 
@@ -313,18 +329,26 @@ const lexBlockEnd: LexFn = (cur, toks) => {
     val += cur.read()
     cur = cur.advance()
   }
-  toks.push(new Token(TokenType.BlockEnd, val, start))
+  toks.push(new Token(TokenType.BlockEnd, val, [start, cur.position()]))
   return [cur, lexRightDelim]
 }
 
 const lexRightDelim: LexFn = (cur, toks) => {
   cur = cur.skipWhitespace()
   if (cur.hasPrefix(RIGHT_DELIM)) {
-    toks.push(new Token(TokenType.RightDelim, RIGHT_DELIM, cur.position()))
+    toks.push(
+      new Token(TokenType.RightDelim, RIGHT_DELIM, [
+        cur.position(),
+        cur.skipPrefix(RIGHT_DELIM).position(),
+      ])
+    )
     return [cur.skipPrefix(RIGHT_DELIM), lexAny]
   } else {
     toks.push(
-      new Token(TokenType.Error, 'expected right delimiter', cur.position())
+      new Token(TokenType.Error, 'expected right delimiter', [
+        cur.position(),
+        cur.position(),
+      ])
     )
     return [cur, null]
   }
