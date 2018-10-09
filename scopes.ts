@@ -1,8 +1,19 @@
 import { Type, Unknown, Obj, Opt, List } from './types'
+import { Node } from './parser'
 
 export abstract class Scope {
   // The `fields` object records constraints satisfied by the current scope.
   public fields: { [path: string]: Type } = {}
+
+  constructor(public node: Node) {}
+
+  public start() {
+    return this.node.start()
+  }
+
+  public end() {
+    return this.node.end()
+  }
 
   public abstract lookup(path: string): Type
 
@@ -56,8 +67,8 @@ export class Root extends Scope {
 }
 
 export class Cond extends Scope {
-  constructor(public parent: Scope, public path: string) {
-    super()
+  constructor(public parent: Scope, public path: string, node: Node) {
+    super(node)
     this.condition(this.path, new Unknown())
   }
 
@@ -86,8 +97,8 @@ export class Cond extends Scope {
 }
 
 export class With extends Scope {
-  constructor(public parent: Scope, public path: string) {
-    super()
+  constructor(public parent: Scope, public path: string, node: Node) {
+    super(node)
   }
 
   public lookup(path: string): Type {
@@ -115,8 +126,8 @@ export class With extends Scope {
 }
 
 export class Loop extends With {
-  constructor(parent: Scope, path: string) {
-    super(parent, path)
+  constructor(parent: Scope, path: string, node: Node) {
+    super(parent, path, node)
     parent.condition(path, new List())
   }
 

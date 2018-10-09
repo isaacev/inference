@@ -2,7 +2,9 @@ import * as parser from './parser'
 import { Type, Str } from './types'
 import { Scope, Root, Cond, With, Loop } from './scopes'
 
-type NewableScope = { new (parent: Scope, path: string): Scope }
+type NewableScope = {
+  new (parent: Scope, path: string, node: parser.Node): Scope
+}
 
 const blockScopes: { [name: string]: NewableScope } = {
   cond: Cond,
@@ -11,7 +13,7 @@ const blockScopes: { [name: string]: NewableScope } = {
 }
 
 export const toConstraints = (root: parser.Root): Root => {
-  const scope = new Root()
+  const scope = new Root(root)
   root.children.forEach(node => constrainNode(scope, node))
   return scope
 }
@@ -27,7 +29,7 @@ const constrainNode = (scope: Scope, node: parser.Node) => {
       throw new Error(`unknown block: "${node.name}"`)
     }
 
-    const subscope = new constructor(scope, node.field)
+    const subscope = new constructor(scope, node.field, node)
     node.children.forEach(node => constrainNode(subscope, node))
   } else {
     throw new Error(`unknown node: "${node.toJSON().typ}"`)
