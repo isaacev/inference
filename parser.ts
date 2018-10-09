@@ -69,14 +69,14 @@ export class Text extends Node {
 }
 
 export class InlineAction extends Node {
-  constructor(public field: string) {
+  constructor(public expr: Expression) {
     super()
   }
 
   public toJSON() {
     return {
       typ: 'inline',
-      field: this.field,
+      expr: this.expr,
     }
   }
 }
@@ -97,6 +97,80 @@ export class BlockAction extends Node {
       field: this.field,
       children: this.children.map(child => child.toJSON()),
     }
+  }
+}
+
+export abstract class Expression {
+  public abstract toJSON(): { typ: string }
+  public abstract toString(): string
+}
+
+export class FuncExpression extends Expression {
+  constructor(public name: string, public field: Field) {
+    super()
+  }
+
+  public toJSON() {
+    return {
+      typ: 'func',
+      name: this.name,
+      field: this.field,
+    }
+  }
+
+  public toString() {
+    return `(${this.name} ${this.field})`
+  }
+}
+
+export class Str extends Expression {
+  constructor(public value: string) {
+    super()
+  }
+
+  public toJSON() {
+    return {
+      typ: 'str',
+      value: this.value,
+    }
+  }
+
+  public toString() {
+    return `"${this.value}`
+  }
+}
+
+export class Int extends Expression {
+  constructor(public value: number) {
+    super()
+  }
+
+  public toJSON() {
+    return {
+      typ: 'int',
+      value: this.value,
+    }
+  }
+
+  public toString() {
+    return this.value.toString()
+  }
+}
+
+export class Field extends Expression {
+  constructor(public path: string) {
+    super()
+  }
+
+  public toJSON() {
+    return {
+      typ: 'field',
+      path: this.path,
+    }
+  }
+
+  public toString() {
+    return this.path
   }
 }
 
@@ -140,19 +214,55 @@ const parseText = (cur: TokenCursor): [TokenCursor, Text] => {
 const parseAction = (cur: TokenCursor): [TokenCursor, Node] => {
   const [cur1] = cur.require(TokenType.LeftDelim)
   switch (cur1.read().typ) {
-    case TokenType.Field:
-      return parseInlineAction(cur1)
     case TokenType.BlockStart:
       return parseBlockAction(cur1)
     default:
-      return unexpectedToken(cur1)
+      return parseInlineAction(cur1)
   }
 }
 
+const parseExpression = (cur: TokenCursor): [TokenCursor, Node] => {
+  switch (cur.read().typ) {
+    case TokenType.Field:
+      return [cur.advance(), new Field(cur.read().val)]
+    case TokenType.Str:
+      return [cur.advance(), new Str(cur.read().val)]
+    case TokenType.Int:
+      return [cur.advance(), new Int(parseInt(cur.read().val, 10))]
+    case TokenType.LeftParen:
+      return parseFuncExpression(cur.advance())
+    default:
+      return unexpectedToken(cur)
+  }
+}
+
+const parseFuncExpression = (cur: TokenCursor): [TokenCursor, Expression] => {
+  let [cur1, name] = cur.require(TokenType.Name)
+  // const exprs = [] as Expression[]
+  // while (true) {
+  //   if (cur1.isDone() || cur1.read().typ === TokenType.EOF) {
+  //     return unexpectedToken(cur1, TokenType.RightParen)
+  //   }
+
+  //   if (cur1.read().typ === TokenType.RightParen) {
+  //     const [cur2] = cur1.require(TokenType.RightParen)
+  //     return [cur2, new FuncExpression(name.val, exprs)]
+  //   }
+
+  //   const [cur2, expr] = parseExpression(cur1)
+  //   cur1 = cur2
+  //   exprs.push(expr)
+  // }
+
+  let [cur2, field] = cur1.require(TokenType.Field)
+  let [cur3] = cur2.require(TokenType.RightParen)
+  return [cur3, new FuncExpression(name.val, new Field(field.val))]
+}
+
 const parseInlineAction = (cur: TokenCursor): [TokenCursor, Node] => {
-  const [cur1, field] = cur.require(TokenType.Field)
+  const [cur1, expr] = parseExpression(cur)
   const [cur2] = cur1.require(TokenType.RightDelim)
-  return [cur2, new InlineAction(field.val)]
+  return [cur2, new InlineAction(expr)]
 }
 
 const parseBlockAction = (cur: TokenCursor): [TokenCursor, Node] => {
