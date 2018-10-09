@@ -5,6 +5,9 @@ export abstract class Scope {
   // The `fields` object records constraints satisfied by the current scope.
   public fields: { [path: string]: Type } = {}
 
+  // Any scopes that extend this scope.
+  public children: Scope[] = []
+
   constructor(public node: Node) {}
 
   public start() {
@@ -14,6 +17,8 @@ export abstract class Scope {
   public end() {
     return this.node.end()
   }
+
+  public abstract inheritance(): Scope[]
 
   public abstract lookup(path: string): Type
 
@@ -43,6 +48,10 @@ export abstract class Scope {
 }
 
 export class Root extends Scope {
+  public inheritance(): Scope[] {
+    return [this]
+  }
+
   public lookup(path: string): Type {
     if (this.fields.hasOwnProperty(path)) {
       return this.fields[path]
@@ -69,7 +78,12 @@ export class Root extends Scope {
 export class Cond extends Scope {
   constructor(public parent: Scope, public path: string, node: Node) {
     super(node)
+    this.parent.children.push(this)
     this.condition(this.path, new Unknown())
+  }
+
+  public inheritance(): Scope[] {
+    return [this as Scope].concat(this.parent.inheritance())
   }
 
   public lookup(path: string): Type {
@@ -99,6 +113,11 @@ export class Cond extends Scope {
 export class With extends Scope {
   constructor(public parent: Scope, public path: string, node: Node) {
     super(node)
+    this.parent.children.push(this)
+  }
+
+  public inheritance(): Scope[] {
+    return [this as Scope].concat(this.parent.inheritance())
   }
 
   public lookup(path: string): Type {
