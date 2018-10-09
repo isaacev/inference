@@ -105,7 +105,7 @@ export class Cond extends Scope {
   public propogate(path: string, typ: Type) {
     if (this.fields.hasOwnProperty(path)) {
       const original = this.fields[path]
-      const combined = original.union(typ)
+      const combined = original.intersect(typ)
       this.fields[path] = combined
       this.parent.propogate(path, new Opt(combined))
     } else {
