@@ -1,10 +1,13 @@
 export const DEFAULT_TEMPLATE = `<h1>{{.title}}</h1>
 
-{{#if .body}}
-  <article>{{.body}}</article>
+{{#cond .title}}
+  {{.subtitle}}
   <ul>
-    {{#loop .related}}
-      <li>{{.name}}</li>
+    {{#loop .things}}
+      {{#cond .link}}
+        <li><a href="{{.link}}">{{.name}}</a></li>
+      {{/cond}}
     {{/loop}}
   </ul>
-{{/if}}`
+{{/cond}}
+`
