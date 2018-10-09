@@ -1,4 +1,4 @@
-import { Type, Unknown, Obj, Opt, List } from './types'
+import { Type, Unknown, Val, Obj, Opt, List, Nil } from './types'
 import { Node } from './parser'
 
 export abstract class Scope {
@@ -27,16 +27,14 @@ export abstract class Scope {
   // method is provided by all scope types to facilitate that exchange.
   public abstract propogate(path: string, typ: Type): void
 
-  // Requires that a constraint be met for a block to be rendered.
-  public condition(path: string, typ: Type): void {
+  public localConstraint(path: string, typ: Type): void {
     const original = this.fields[path] || new Unknown()
     const combined = original.intersect(typ)
     this.fields[path] = combined
     this.propogate(path, combined)
   }
 
-  // Requires that a constraint be satisfied by the current scope.
-  public constrain(path: string, typ: Type): void {
+  public parentConstraint(path: string, typ: Type): void {
     const original = this.lookup(path)
     const combined = original.intersect(typ)
     this.propogate(path, combined)
@@ -79,7 +77,17 @@ export class Cond extends Scope {
   constructor(public parent: Scope, public path: string, node: Node) {
     super(node)
     this.parent.children.push(this)
-    this.condition(this.path, new Unknown())
+
+    const original = this.lookup(this.path)
+    if (original instanceof Unknown) {
+      this.localConstraint(this.path, new Val())
+    } else if (original instanceof Opt) {
+      this.localConstraint(this.path, original.child)
+    } else if (original instanceof Nil) {
+      throw new Error('unreachable code')
+    } else {
+      console.error(`unnecessary conditional. ${path} is already ${original.toString()} on line ${node.start().line}`)
+    }
   }
 
   public inheritance(): Scope[] {
@@ -147,7 +155,7 @@ export class With extends Scope {
 export class Loop extends With {
   constructor(parent: Scope, path: string, node: Node) {
     super(parent, path, node)
-    parent.condition(path, new List())
+    parent.localConstraint(path, new List())
   }
 
   public propogate(path: string, typ: Type) {

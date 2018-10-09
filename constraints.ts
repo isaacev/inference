@@ -38,7 +38,7 @@ const constrainNode = (scope: Scope, node: parser.Node) => {
 
 const constrainExpr = (scope: Scope, expr: parser.Expression, typ: Type) => {
   if (expr instanceof parser.Field) {
-    scope.constrain(expr.path, typ)
+    scope.parentConstraint(expr.path, typ)
   } else {
     throw new Error(`unknown expression: "${expr.toJSON().typ}"`)
   }
