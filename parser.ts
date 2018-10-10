@@ -1,5 +1,6 @@
 import { Token, TokenType, Point, Range } from './lexer'
 import { Path } from './paths'
+import { TemplateSyntaxError } from './errors'
 
 class TokenCursor {
   constructor(private domain: Token[], private pointer: number = 0) {}
@@ -24,17 +25,22 @@ class TokenCursor {
     }
   }
 
-  public require(typ: TokenType, val?: string): [TokenCursor, Token] {
-    if (val) {
-      if (this.read().typ === typ && this.read().val == val) {
-        return [this.advance(), this.read()]
-      } else {
-        return unexpectedToken(this, typ, val)
-      }
-    } else if (this.read().typ === typ) {
+  public require(typ: TokenType): [TokenCursor, Token] {
+    if (this.read().typ === typ) {
       return [this.advance(), this.read()]
     } else {
       return unexpectedToken(this, typ)
+    }
+  }
+
+  public requireClosingAction(val: string): [TokenCursor, Token] {
+    if (this.read().typ === TokenType.BlockEnd && this.read().val === val) {
+      return [this.advance(), this.read()]
+    } else {
+      throw new TemplateSyntaxError(
+        this.read().range,
+        `expected "/${val}", got "/${this.read().val}"`
+      )
     }
   }
 }
@@ -69,7 +75,7 @@ export class Root extends Node {
   public toJSON() {
     return {
       typ: 'root',
-      range: this.range,
+      range: [this.start(), this.end()] as Range,
       children: this.children.map(child => child.toJSON()),
     }
   }
@@ -263,22 +269,11 @@ export class Field extends Expression {
   }
 }
 
-const unexpectedToken = (
-  cur: TokenCursor,
-  wanted?: TokenType,
-  msg?: string
-): never => {
-  if (cur.read().typ === TokenType.Error) {
-    throw new Error(cur.read().val)
-  } else if (wanted && msg) {
-    throw new Error(
-      `wanted ${wanted}(${msg}), got ${cur.read().typ}(${cur.read().val})`
-    )
-  } else if (wanted) {
-    throw new Error(`wanted ${wanted}, got ${cur.read().typ}`)
-  } else {
-    throw new Error(`unexpected ${cur.read().typ}`)
-  }
+const unexpectedToken = (cur: TokenCursor, wanted?: TokenType): never => {
+  const msg = wanted
+    ? `wanted "${wanted}", got "${cur.read().typ}"`
+    : `unexpected ${cur.read().typ}`
+  throw new TemplateSyntaxError(cur.read().range, msg)
 }
 
 const parseAny = (cur: TokenCursor): [TokenCursor, Node] => {
@@ -310,7 +305,7 @@ const parseAction = (cur: TokenCursor): [TokenCursor, Node] => {
   }
 }
 
-const parseExpression = (cur: TokenCursor): [TokenCursor, Node] => {
+const parseExpression = (cur: TokenCursor): [TokenCursor, Expression] => {
   switch (cur.read().typ) {
     case TokenType.Field:
       return [cur.advance(), new Field(cur.read().range, cur.read().val)]
@@ -331,22 +326,6 @@ const parseExpression = (cur: TokenCursor): [TokenCursor, Node] => {
 const parseFuncExpression = (cur: TokenCursor): [TokenCursor, Expression] => {
   let [cur1, leftParen] = cur.require(TokenType.LeftParen)
   let [cur2, name] = cur1.require(TokenType.Name)
-  // const exprs = [] as Expression[]
-  // while (true) {
-  //   if (cur1.isDone() || cur1.read().typ === TokenType.EOF) {
-  //     return unexpectedToken(cur1, TokenType.RightParen)
-  //   }
-
-  //   if (cur1.read().typ === TokenType.RightParen) {
-  //     const [cur2] = cur1.require(TokenType.RightParen)
-  //     return [cur2, new FuncExpression(name.val, exprs)]
-  //   }
-
-  //   const [cur2, expr] = parseExpression(cur1)
-  //   cur1 = cur2
-  //   exprs.push(expr)
-  // }
-
   let [cur3, field] = cur2.require(TokenType.Field)
   let [cur4, rightParen] = cur3.require(TokenType.RightParen)
   return [
@@ -386,7 +365,7 @@ const parseBlockAction = (cur: TokenCursor): [TokenCursor, Node] => {
       cur4.advance().read().typ === TokenType.BlockEnd
     ) {
       const [cur5] = cur4.require(TokenType.LeftDelim)
-      const [cur6] = cur5.require(TokenType.BlockEnd, start.val)
+      const [cur6] = cur5.requireClosingAction(start.val)
       const [cur7, rightDelim] = cur6.require(TokenType.RightDelim)
       return [
         cur7,
