@@ -1,6 +1,6 @@
 export const DEFAULT_TEMPLATE = `<h1>{{.title}}</h1>
 
-{{#cond .title}}
+{{#cond .things}}
   {{.subtitle}}
   <ul>
     {{#loop .things}}
