@@ -161,7 +161,7 @@ const lexLeftDelim: LexFn = (cur, toks) => {
     )
     return [cur.skipPrefix(LEFT_DELIM), lexInside]
   } else {
-    throw new TemplateSyntaxError([cur.position(), cur.position()], 'expected left delimiter')
+    throw new TemplateSyntaxError(cur.position(), 'expected left delimiter')
   }
 }
 
@@ -197,7 +197,7 @@ const lexInside: LexFn = (cur, _toks) => {
       } else if (cur.accepts(ALPHANUMERIC)) {
         return [cur, lexName]
       } else {
-        throw new TemplateSyntaxError([cur.position(), cur.position()], 'unexpected character')
+        throw new TemplateSyntaxError(cur.position(), 'unexpected character')
       }
   }
 }
@@ -205,7 +205,7 @@ const lexInside: LexFn = (cur, _toks) => {
 const makeLexerForChar = (val: string, typ: TokenType): LexFn => {
   return (cur, toks) => {
     if (cur.read() !== val) {
-      throw new TemplateSyntaxError([cur.position(), cur.position()], `expected "${val}", found "${cur.read()}"`)
+      throw new TemplateSyntaxError(cur.position(), `expected "${val}", found "${cur.read()}"`)
     } else {
       toks.push(new Token(typ, val, [cur.position(), cur.advance().position()]))
       return [cur.advance(), lexInside]
@@ -325,7 +325,7 @@ const lexRightDelim: LexFn = (cur, toks) => {
     )
     return [cur.skipPrefix(RIGHT_DELIM), lexAny]
   } else {
-    throw new TemplateSyntaxError([cur.position(), cur.position()], 'expected right delimiter')
+    throw new TemplateSyntaxError(cur.position(), 'expected right delimiter')
   }
 }
 
