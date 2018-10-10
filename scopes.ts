@@ -1,175 +1,157 @@
-import { Type, Unknown, Val, Obj, Opt, List, Nil } from './types'
-import { Node } from './parser'
+import { Type, Unknown, Opt, Nil, List, Str } from './types'
+import * as parser from './parser'
+import { Path, lookup, smallestCommonType, largestCommonType } from './paths'
+import { TemplateSyntaxError } from './errors'
 
 export abstract class Scope {
-  // The `fields` object records constraints satisfied by the current scope.
-  public fields: { [path: string]: Type } = {}
+  public children: Scope[]
 
-  // Any scopes that extend this scope.
-  public children: Scope[] = []
-
-  constructor(public node: Node) {}
-
-  public start() {
-    return this.node.start()
+  constructor(public node: parser.Node, public context: Type) {
+    this.children = []
   }
 
-  public end() {
-    return this.node.end()
+  public lookup(path: Path): Type {
+    return lookup(path, this.context)
   }
 
-  public abstract inheritance(): Scope[]
+  public abstract constrain(path: Path, typ: Type): void
 
-  public abstract lookup(path: string): Type
+  public abstract propogate(path: Path, typ: Type): void
 
-  // When new constraints are added to child scopes, those constraints
-  // have to be passed to parent scopes often with modification. This
-  // method is provided by all scope types to facilitate that exchange.
-  public abstract propogate(path: string, typ: Type): void
-
-  public localConstraint(path: string, typ: Type): void {
-    const original = this.fields[path] || new Unknown()
-    const combined = original.intersect(typ)
-    this.fields[path] = combined
-    this.propogate(path, combined)
-  }
-
-  public parentConstraint(path: string, typ: Type): void {
-    const original = this.lookup(path)
-    const combined = original.intersect(typ)
-    this.propogate(path, combined)
-  }
-
-  public toString(name?: string): string {
-    return (!!name ? name + ' ' : '') + new Obj(this.fields).toString()
+  public toString(): string {
+    return this.context.toString()
   }
 }
 
 export class Root extends Scope {
-  public inheritance(): Scope[] {
-    return [this]
+  public constrain(path: Path, typ: Type) {
+    this.context = smallestCommonType(path, this.context, typ)
   }
 
-  public lookup(path: string): Type {
-    if (this.fields.hasOwnProperty(path)) {
-      return this.fields[path]
-    } else {
-      return new Unknown()
-    }
-  }
-
-  public propogate(path: string, typ: Type) {
-    if (this.fields.hasOwnProperty(path)) {
-      const original = this.fields[path]
-      const combined = original.intersect(typ)
-      this.fields[path] = combined
-    } else {
-      this.fields[path] = typ
-    }
-  }
-
-  public toString(name?: string) {
-    return super.toString(name || 'root')
+  public propogate(path: Path, typ: Type) {
+    this.context = largestCommonType(path, this.context, typ)
   }
 }
 
-export class Cond extends Scope {
-  constructor(public parent: Scope, public path: string, node: Node) {
-    super(node)
-    this.parent.children.push(this)
-
-    const original = this.lookup(this.path)
-    if (original instanceof Unknown) {
-      this.localConstraint(this.path, new Val())
-    } else if (original instanceof Opt) {
-      this.localConstraint(this.path, original.child)
-    } else if (original instanceof Nil) {
-      throw new Error('unreachable code')
-    } else {
-      console.error(`unnecessary conditional. ${path} is already ${original.toString()} on line ${node.start().line}`)
-    }
-  }
-
-  public inheritance(): Scope[] {
-    return [this as Scope].concat(this.parent.inheritance())
-  }
-
-  public lookup(path: string): Type {
-    if (this.fields.hasOwnProperty(path)) {
-      return this.fields[path]
-    } else {
-      return this.parent.lookup(path)
-    }
-  }
-
-  public propogate(path: string, typ: Type) {
-    if (this.fields.hasOwnProperty(path)) {
-      const original = this.fields[path]
-      const combined = original.intersect(typ)
-      this.fields[path] = combined
-      this.parent.propogate(path, new Opt(combined))
-    } else {
-      this.parent.propogate(path, typ)
-    }
-  }
-
-  public toString(name?: string) {
-    return super.toString(name || 'cond')
-  }
-}
-
-export class With extends Scope {
-  constructor(public parent: Scope, public path: string, node: Node) {
-    super(node)
+export abstract class ChildScope extends Scope {
+  constructor(public parent: Scope, public path: Path, node: parser.Node, context?: Type) {
+    super(node, context ? context : parent.lookup(path))
     this.parent.children.push(this)
   }
+}
 
-  public inheritance(): Scope[] {
-    return [this as Scope].concat(this.parent.inheritance())
-  }
-
-  public lookup(path: string): Type {
-    if (this.fields.hasOwnProperty(path)) {
-      return this.fields[path]
+export class Cond extends ChildScope {
+  constructor(parent: Scope, path: Path, node: parser.Node, context: Type = parent.lookup(path)) {
+    if (context instanceof Unknown) {
+      super(parent, path, node, new Unknown())
+      this.parent.constrain(this.path, new Opt())
+    } else if (context instanceof Opt) {
+      super(parent, path, node, context.child)
+    } else if (context instanceof Nil) {
+      super(parent, path, node, context)
+      // console.warn('conditional will never be triggered')
     } else {
-      return this.parent.lookup(path)
+      super(parent, path, node, context)
+      // console.warn('conditional is not necessary')
     }
   }
 
-  public propogate(path: string, typ: Type) {
-    if (this.fields.hasOwnProperty(path)) {
-      const original = this.fields[path]
-      const combined = original.union(typ)
-      this.fields[path] = combined
-      this.parent.propogate(path, new Obj({ [path]: combined }))
+  public constrain(path: Path, typ: Type) {
+    if (path.hasHead(this.path)) {
+      // Constraint directly affect the conditional block.
+      const relpath = path.relativeTo(this.path)
+      this.context = smallestCommonType(relpath, this.context, typ)
+      this.parent.propogate(this.path, new Opt(this.context))
     } else {
-      this.parent.propogate(path, new Obj({ [path]: typ }))
+      // Constraint directly impacts parent scope.
+      this.parent.constrain(path, typ)
     }
   }
 
-  public toString(name?: string) {
-    return super.toString(name || 'with')
+  public propogate(path: Path, typ: Type) {
+    if (path.hasHead(this.path)) {
+      // Constraint directly affect the conditional block.
+      const relpath = path.relativeTo(this.path)
+      this.context = largestCommonType(relpath, this.context, typ)
+      this.parent.propogate(this.path, new Opt(this.context))
+    } else {
+      // Constraint directly impacts parent scope.
+      this.parent.constrain(path, typ)
+    }
   }
 }
 
-export class Loop extends With {
-  constructor(parent: Scope, path: string, node: Node) {
-    super(parent, path, node)
-    parent.localConstraint(path, new List())
+export class With extends ChildScope {
+  constructor(parent: Scope, path: Path, node: parser.Node, context?: Type) {
+    super(parent, path, node, context)
+    this.parent.constrain(this.path, new Unknown())
   }
 
-  public propogate(path: string, typ: Type) {
-    if (this.fields.hasOwnProperty(path)) {
-      const original = this.fields[path]
-      const combined = original.union(typ)
-      this.fields[path] = combined
-      this.parent.propogate(this.path, new List(new Obj({ [path]: typ })))
+  public constrain(path: Path, typ: Type) {
+    this.context = smallestCommonType(path, this.context, typ)
+    this.parent.constrain(this.path, this.context)
+  }
+
+  public propogate(path: Path, typ: Type) {
+    this.context = largestCommonType(path, this.context, typ)
+    this.parent.constrain(this.path, this.context)
+  }
+}
+
+export class Loop extends ChildScope {
+  constructor(parent: Scope, path: Path, node: parser.Node, context?: Type) {
+    if (context instanceof Unknown) {
+      super(parent, path, node, new Unknown())
+      this.parent.constrain(this.path, new List())
+    } else if (context instanceof List) {
+      super(parent, path, node, context.child)
     } else {
-      this.parent.propogate(this.path, new List(new Obj({ [path]: typ })))
+      // This branch should throw an error.
+      super(parent, path, node, context)
+      this.parent.constrain(this.path, new List())
     }
   }
 
-  public toString() {
-    return super.toString('loop')
+  public constrain(path: Path, typ: Type) {
+    this.context = smallestCommonType(path, this.context, typ)
+    this.parent.propogate(this.path, new List(this.context))
+  }
+
+  public propogate(path: Path, typ: Type) {
+    this.context = largestCommonType(path, this.context, typ)
+    this.parent.propogate(this.path, new List(this.context))
+  }
+}
+
+export const toScope = (root: parser.Root): Root => {
+  const scope = new Root(root, new Unknown())
+  root.children.forEach(node => nodeToScope(scope, node))
+  return scope
+}
+
+const nodeToScope = (scope: Scope, node: parser.Node) => {
+  if (node instanceof parser.InlineAction) {
+    exprToScope(scope, node.expr)
+  } else if (node instanceof parser.BlockAction) {
+    if (node.name === 'cond') {
+      const subscope = new Cond(scope, Path.fromString(node.field), node)
+      node.children.forEach(subnode => nodeToScope(subscope, subnode))
+    } else if (node.name === 'with') {
+      const subscope = new With(scope, Path.fromString(node.field), node)
+      node.children.forEach(subnode => nodeToScope(subscope, subnode))
+    } else if (node.name === 'loop') {
+      const subscope = new Loop(scope, Path.fromString(node.field), node)
+      node.children.forEach(subnode => nodeToScope(subscope, subnode))
+    } else {
+      throw new TemplateSyntaxError([node.start(), node.end()], `unknown block`)
+    }
+  }
+}
+
+const exprToScope = (scope: Scope, expr: parser.Expression) => {
+  if (expr instanceof parser.Field) {
+    scope.constrain(expr.path, new Str())
+  } else {
+    throw new TemplateSyntaxError([expr.start(), expr.end()], `unknown expression`)
   }
 }

@@ -4,7 +4,7 @@ import { Controlled as CodeMirror } from 'react-codemirror2'
 import { DEFAULT_TEMPLATE } from './examples'
 import * as lexer from './lexer'
 import * as parser from './parser'
-import * as scopes from './scopes2'
+import * as scopes from './scopes'
 import * as errors from './errors'
 
 interface AppProps {
