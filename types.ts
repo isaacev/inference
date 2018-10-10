@@ -397,6 +397,14 @@ export class Obj extends Type {
     )
   }
 
+  public lookup(path: string): Type {
+    if (this.hasField(path)) {
+      return this.field(path)
+    } else {
+      return new Unknown()
+    }
+  }
+
   public accepts(typ: Type): boolean {
     if (typ instanceof Obj) {
       return this.pairs.every(([n, t1]) => {
