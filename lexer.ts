@@ -122,7 +122,7 @@ export class Token {
     return {
       typ: this.typ.toString(),
       val: this.val,
-      pos: [this.pos.line, this.pos.column],
+      range: this.range,
     }
   }
 }
@@ -165,7 +165,7 @@ const lexLeftDelim: LexFn = (cur, toks) => {
   }
 }
 
-const lexInside: LexFn = (cur, toks) => {
+const lexInside: LexFn = (cur, _toks) => {
   cur = cur.skipWhitespace()
 
   if (cur.isDone()) {
@@ -180,7 +180,7 @@ const lexInside: LexFn = (cur, toks) => {
     case '#':
       return [cur.advance(), lexBlockStart]
     case '/':
-      return [cur.advance(), lexBlockEnd]
+      return [cur, lexBlockEnd]
     case '.':
       return [cur, lexField]
     case '=':
@@ -305,6 +305,7 @@ const lexBlockStart: LexFn = (cur, toks) => {
 const lexBlockEnd: LexFn = (cur, toks) => {
   let val = ''
   const start = cur.position()
+  cur = cur.advance()
   while (!cur.isDone() && cur.accepts(ALPHANUMERIC)) {
     val += cur.read()
     cur = cur.advance()
