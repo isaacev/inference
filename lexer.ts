@@ -1,3 +1,5 @@
+import { TemplateSyntaxError } from './errors'
+
 const LOWER_LETTERS = 'abcdefghijklmnopqrstuvwxyz'
 const UPPER_LETTERS = LOWER_LETTERS.toUpperCase()
 const LETTERS = LOWER_LETTERS + UPPER_LETTERS
@@ -91,7 +93,6 @@ const RIGHT_DELIM = '}}'
 
 export enum TokenType {
   EOF = 'EOF',
-  Error = 'ERROR',
   LeftDelim = 'LEFT_DELIM',
   BlockStart = 'BLOCK_START',
   BlockEnd = 'BLOCK_END',
@@ -160,13 +161,7 @@ const lexLeftDelim: LexFn = (cur, toks) => {
     )
     return [cur.skipPrefix(LEFT_DELIM), lexInside]
   } else {
-    toks.push(
-      new Token(TokenType.Error, 'expected left delimiter', [
-        cur.position(),
-        cur.position(),
-      ])
-    )
-    return [cur, null]
+    throw new TemplateSyntaxError([cur.position(), cur.position()], 'expected left delimiter')
   }
 }
 
@@ -202,13 +197,7 @@ const lexInside: LexFn = (cur, toks) => {
       } else if (cur.accepts(ALPHANUMERIC)) {
         return [cur, lexName]
       } else {
-        toks.push(
-          new Token(TokenType.Error, 'unexpected character', [
-            cur.position(),
-            cur.position(),
-          ])
-        )
-        return [cur, null]
+        throw new TemplateSyntaxError([cur.position(), cur.position()], 'unexpected character')
       }
   }
 }
@@ -216,13 +205,7 @@ const lexInside: LexFn = (cur, toks) => {
 const makeLexerForChar = (val: string, typ: TokenType): LexFn => {
   return (cur, toks) => {
     if (cur.read() !== val) {
-      toks.push(
-        new Token(TokenType.Error, `expected '${val}'`, [
-          cur.position(),
-          cur.position(),
-        ])
-      )
-      return [cur, null]
+      throw new TemplateSyntaxError([cur.position(), cur.position()], `expected "${val}", found "${cur.read()}"`)
     } else {
       toks.push(new Token(typ, val, [cur.position(), cur.advance().position()]))
       return [cur.advance(), lexInside]
@@ -260,7 +243,7 @@ const lexStr: LexFn = (cur, toks) => {
       cur = cur.advance()
     }
   }
-  throw new Error(`unclosed string`)
+  throw new TemplateSyntaxError([start, cur.position()], 'unclosed string')
 }
 
 const lexInt: LexFn = (cur, toks) => {
@@ -301,7 +284,7 @@ const lexField: LexFn = (cur, toks) => {
     toks.push(new Token(TokenType.Field, val, [start, cur.position()]))
     return [cur, lexInside]
   } else {
-    throw new Error(`invalid field: "${val}"`)
+    throw new TemplateSyntaxError([start, cur.position()], 'illegal field')
   }
 }
 
@@ -313,10 +296,7 @@ const lexBlockStart: LexFn = (cur, toks) => {
     cur = cur.advance()
   }
   if (val.length === 0) {
-    toks.push(
-      new Token(TokenType.Error, 'expected block name', [start, cur.position()])
-    )
-    return [cur, null]
+    throw new TemplateSyntaxError([start, cur.position()], 'expected block name')
   }
   toks.push(new Token(TokenType.BlockStart, val, [start, cur.position()]))
   return [cur, lexInside]
@@ -344,13 +324,7 @@ const lexRightDelim: LexFn = (cur, toks) => {
     )
     return [cur.skipPrefix(RIGHT_DELIM), lexAny]
   } else {
-    toks.push(
-      new Token(TokenType.Error, 'expected right delimiter', [
-        cur.position(),
-        cur.position(),
-      ])
-    )
-    return [cur, null]
+    throw new TemplateSyntaxError([cur.position(), cur.position()], 'expected right delimiter')
   }
 }
 
