@@ -2,10 +2,6 @@ const cannotIntersect = (t1: Type, t2: Type): never => {
   throw new Error(`unable to intersect ${t1.toString()} and ${t2.toString()}`)
 }
 
-const cannotUnion = (t1: Type, t2: Type): never => {
-  throw new Error(`unable to union ${t1.toString()} and ${t2.toString()}`)
-}
-
 export abstract class Type {
   /**
    * Returns true if `typ` is as or more restrictive than `this`. For example:
@@ -37,7 +33,7 @@ export abstract class Type {
 }
 
 export class Unknown extends Type {
-  public accepts(typ: Type) {
+  public accepts() {
     return true
   }
 
