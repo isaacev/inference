@@ -172,7 +172,7 @@ export class Opt extends Type {
     } else if (typ instanceof Opt) {
       return new Opt(this.child.intersect(typ.child))
     } else {
-      return new Opt(this.child.intersect(typ))
+      return this.child.intersect(typ)
     }
   }
 
