@@ -17,10 +17,6 @@ main {
   flex-basis: 100%;
   flex-grow: 1;
 
-  textarea {
-    opacity: 0;
-  }
-
   .CodeMirror {
     height: 100%;
     font-family: 'Dank Mono', monospace;
