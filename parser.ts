@@ -1,4 +1,5 @@
 import { Token, TokenType, Point, Range } from './lexer'
+import { Path } from './paths'
 
 class TokenCursor {
   constructor(private domain: Token[], private pointer: number = 0) {}
@@ -234,8 +235,11 @@ export class Int extends Expression {
 }
 
 export class Field extends Expression {
-  constructor(public range: Range, public path: string) {
+  public path: Path
+
+  constructor(public range: Range, path: string) {
     super()
+    this.path = Path.fromString(path)
   }
 
   public start() {
@@ -255,7 +259,7 @@ export class Field extends Expression {
   }
 
   public toString() {
-    return this.path
+    return this.path.toString()
   }
 }
 
