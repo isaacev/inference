@@ -1,6 +1,8 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { Controlled as CodeMirror } from 'react-codemirror2'
+import { Editor, EditorChange, TextMarker } from 'codemirror'
+import * as localforage from 'localforage'
 import { DEFAULT_TEMPLATE } from './examples'
 import * as lexer from './lexer'
 import * as parser from './parser'
@@ -15,6 +17,7 @@ interface AppState {
   template: string
   scope: errors.TemplateError | scopes.Root
   cursor: { line: number; column: number }
+  marks: TextMarker[]
 }
 
 const toScope = (tmpl: string): errors.TemplateError | scopes.Root => {
@@ -38,15 +41,40 @@ class App extends React.Component<AppProps, AppState> {
       template: props.initialTemplate,
       scope: toScope(props.initialTemplate),
       cursor: { line: 1, column: 1 },
+      marks: [],
     }
+    this.handleBeforeChange = this.handleBeforeChange.bind(this)
+    this.handleChange = this.handleChange.bind(this)
+    this.handleCursorActivity = this.handleCursorActivity.bind(this)
   }
 
-  public handleChange(newValue: string) {
-    this.setState({ template: newValue, scope: toScope(newValue) })
+  public handleBeforeChange(editor: Editor, diff: EditorChange, value: string) {
+    this.setState({ template: value, scope: toScope(value) })
+    localforage.setItem<string>('template', value)
   }
 
-  public handleCursor(where: CodeMirror.Position) {
-    this.setState({ cursor: { line: where.line + 1, column: where.ch + 1 } })
+  public handleChange(editor: Editor) {
+    // ...
+  }
+
+  public handleCursorActivity(editor: Editor) {
+    // Clear previous marks.
+    this.state.marks.forEach(mark => mark.clear())
+    const cursor = posToPoint(editor.getDoc().getCursor())
+    this.setState({
+      cursor,
+      marks: [],
+    })
+
+    if (this.state.scope instanceof scopes.Root) {
+      const local =
+        localScopeAtPosition(this.state.scope, this.state.cursor) ||
+        this.state.scope
+      const from = pointToPos(local.node.start())
+      const to = pointToPos(local.node.end())
+      const mark = editor.getDoc().markText(from, to, { className: 'text-marker-red' })
+      this.setState({ marks: [mark] })
+    }
   }
 
   public render() {
@@ -55,8 +83,9 @@ class App extends React.Component<AppProps, AppState> {
         <div id="left">
           <CodeMirror
             value={this.state.template}
-            onBeforeChange={(_cm, _diff, value) => this.handleChange(value)}
-            onCursorActivity={editor => this.handleCursor(editor.getCursor())}
+            onBeforeChange={this.handleBeforeChange}
+            onChange={this.handleChange}
+            onCursorActivity={this.handleCursorActivity}
             options={{ lineNumbers: true }}
           />
         </div>
@@ -96,6 +125,20 @@ class FormattedScope extends React.PureComponent<FormattedScopeProps> {
           .join('\n')}
       </pre>
     )
+  }
+}
+
+const posToPoint = (pos: { line: number; ch: number }): lexer.Point => {
+  return {
+    line: pos.line + 1,
+    column: pos.ch + 1,
+  }
+}
+
+const pointToPos = (point: lexer.Point) => {
+  return {
+    line: point.line - 1,
+    ch: point.column - 1,
   }
 }
 
@@ -146,7 +189,9 @@ const scopeChain = (scope: scopes.Scope): scopes.Scope[] => {
   }
 }
 
-ReactDOM.render(
-  <App initialTemplate={DEFAULT_TEMPLATE} />,
-  document.querySelector('#main')
-)
+localforage.getItem<string | null>('template').then(template => {
+  ReactDOM.render(
+    <App initialTemplate={template || DEFAULT_TEMPLATE} />,
+    document.querySelector('#main')
+  )
+})
