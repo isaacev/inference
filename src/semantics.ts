@@ -185,11 +185,9 @@ export namespace types {
   export class Obj extends Type {
     private pairs: [string, Type][]
 
-    constructor(hash: { [key: string]: Type } = {}) {
+    constructor(pairs: [string, Type][] = []) {
       super()
-      this.pairs = Object.keys(hash)
-        .sort()
-        .map(name => [name, hash[name]] as [string, Type])
+      this.pairs = pairs
     }
 
     private hasField(name: string): boolean {
@@ -272,12 +270,10 @@ export namespace types {
       fn: (t1: Type, t2: Type) => Type
     ) {
       // Collect all the unique field names in both objects.
-      // For consistency, sort field names alphabetically.
       const unifiedFieldNames = obj1.pairs
         .concat(obj2.pairs)
         .map(([n]) => n)
         .filter((n, i, a) => i === a.indexOf(n))
-        .sort()
 
       // For each field name, union the types associated with that name.
       const unifiedPairs = unifiedFieldNames.map(
@@ -292,13 +288,7 @@ export namespace types {
         }
       )
 
-      // Convert the Array<[field, type]> to a Map<field, type> structure.
-      const unifiedHash = unifiedPairs.reduce(
-        (hash, [name, typ]) => ((hash[name] = typ), hash),
-        {} as { [key: string]: Type }
-      )
-
-      return new Obj(unifiedHash)
+      return new Obj(unifiedPairs)
     }
   }
 
@@ -500,15 +490,15 @@ export namespace types {
         return combine(ctx, cons)
       } else if (first instanceof paths.Field) {
         if (ctx instanceof Unknown) {
-          return new Obj({
-            [first.name]: recurse(path.rest(), new Unknown(), cons),
-          })
+          return new Obj([
+            [first.name, recurse(path.rest(), new Unknown(), cons)],
+          ])
         } else if (ctx instanceof Obj) {
           return combine(
-            new Obj({
-              [first.name]: recurse(path.rest(), ctx.lookup(first.name), cons),
-            }),
-            ctx
+            ctx,
+            new Obj([
+              [first.name, recurse(path.rest(), ctx.lookup(first.name), cons)],
+            ])
           )
         } else {
           throw new Error(`no field "${first.name}" on type ${ctx.toString()}`)
