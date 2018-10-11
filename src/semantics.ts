@@ -212,6 +212,10 @@ export namespace types {
       )
     }
 
+    public toPairs() {
+      return this.pairs.slice()
+    }
+
     public lookup(path: string): Type {
       if (this.hasField(path)) {
         return this.field(path)
