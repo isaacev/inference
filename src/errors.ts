@@ -1,6 +1,6 @@
-import { Range, Point } from './lexer'
+import { Range, Point } from './syntax'
 
-export abstract class TemplateError {
+export class TemplateError {
   constructor(public range: Range | Point, public message: string) {}
 }
 
