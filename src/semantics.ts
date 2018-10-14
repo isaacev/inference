@@ -47,104 +47,6 @@ export namespace scope {
     }
   }
 
-  export class Cond extends ChildScope {
-    constructor(
-      parent: Scope,
-      path: paths.Path,
-      node: ast.Node,
-      context: types.Type = parent.lookup(path)
-    ) {
-      if (context instanceof types.Unknown) {
-        super(parent, path, node, new types.Unknown())
-        this.parent.constrain(this.path, new types.Opt())
-      } else if (context instanceof types.Opt) {
-        super(parent, path, node, context.child)
-      } else if (context instanceof types.Nil) {
-        super(parent, path, node, context)
-        // console.warn('conditional will never be triggered')
-      } else {
-        super(parent, path, node, context)
-        // console.warn('conditional is not necessary')
-      }
-    }
-
-    public constrain(path: paths.Path, typ: types.Type) {
-      if (path.hasHead(this.path)) {
-        // Constraint directly affect the conditional block.
-        const relpath = path.relativeTo(this.path)
-        this.context = types.smallestCommonType(relpath, this.context, typ)
-        this.parent.propogate(this.path, new types.Opt(this.context))
-      } else {
-        // Constraint directly impacts parent scope.
-        this.parent.constrain(path, typ)
-      }
-    }
-
-    public propogate(path: paths.Path, typ: types.Type) {
-      if (path.hasHead(this.path)) {
-        // Constraint directly affect the conditional block.
-        const relpath = path.relativeTo(this.path)
-        this.context = types.largestCommonType(relpath, this.context, typ)
-        this.parent.propogate(this.path, new types.Opt(this.context))
-      } else {
-        // Constraint directly impacts parent scope.
-        this.parent.constrain(path, typ)
-      }
-    }
-  }
-
-  export class With extends ChildScope {
-    constructor(
-      parent: Scope,
-      path: paths.Path,
-      node: ast.Node,
-      context?: types.Type
-    ) {
-      super(parent, path, node, context)
-      this.parent.constrain(this.path, new types.Unknown())
-    }
-
-    public constrain(path: paths.Path, typ: types.Type) {
-      this.context = types.smallestCommonType(path, this.context, typ)
-      this.parent.constrain(this.path, this.context)
-    }
-
-    public propogate(path: paths.Path, typ: types.Type) {
-      this.context = types.largestCommonType(path, this.context, typ)
-      this.parent.constrain(this.path, this.context)
-    }
-  }
-
-  export class Loop extends ChildScope {
-    constructor(
-      parent: Scope,
-      path: paths.Path,
-      node: ast.Node,
-      context?: types.Type
-    ) {
-      if (context instanceof types.Unknown) {
-        super(parent, path, node, new types.Unknown())
-        this.parent.constrain(this.path, new types.List())
-      } else if (context instanceof types.List) {
-        super(parent, path, node, context.child)
-      } else {
-        // This branch should throw an error.
-        super(parent, path, node, context)
-        this.parent.constrain(this.path, new types.List())
-      }
-    }
-
-    public constrain(path: paths.Path, typ: types.Type) {
-      this.context = types.smallestCommonType(path, this.context, typ)
-      this.parent.propogate(this.path, new types.List(this.context))
-    }
-
-    public propogate(path: paths.Path, typ: types.Type) {
-      this.context = types.largestCommonType(path, this.context, typ)
-      this.parent.propogate(this.path, new types.List(this.context))
-    }
-  }
-
   export const infer = (root: ast.Root): Root => {
     const scope = new Root(root, new types.Unknown())
     root.children.forEach(node => nodeToScope(scope, node))
@@ -155,30 +57,7 @@ export namespace scope {
     if (node instanceof ast.InlineAction) {
       exprToScope(scope, node.expr)
     } else if (node instanceof ast.BlockAction) {
-      if (node.name === 'cond') {
-        const subscope = new Cond(
-          scope,
-          paths.Path.fromString(node.field),
-          node
-        )
-        node.children.forEach(subnode => nodeToScope(subscope, subnode))
-      } else if (node.name === 'with') {
-        const subscope = new With(
-          scope,
-          paths.Path.fromString(node.field),
-          node
-        )
-        node.children.forEach(subnode => nodeToScope(subscope, subnode))
-      } else if (node.name === 'loop') {
-        const subscope = new Loop(
-          scope,
-          paths.Path.fromString(node.field),
-          node
-        )
-        node.children.forEach(subnode => nodeToScope(subscope, subnode))
-      } else {
-        throw new TemplateSyntaxError(node.range, `unknown block`)
-      }
+      throw new TemplateSyntaxError(node.range, `unknown block`)
     }
   }
 
