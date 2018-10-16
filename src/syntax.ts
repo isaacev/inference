@@ -59,6 +59,14 @@ export class Range {
       right: this.right,
     }
   }
+
+  public toString(): string {
+    if (this.left.equals(this.right)) {
+      return `at ${this.left}`
+    } else {
+      return `from ${this.left} to ${this.right}`
+    }
+  }
 }
 
 export namespace paths {
@@ -117,6 +125,14 @@ export namespace paths {
         )
       } else {
         throw new Error(`illegal path: "${path}"`)
+      }
+    }
+
+    public static fromFields(fields: string[]): Path {
+      if (fields.length === 0) {
+        return new Path()
+      } else {
+        return new Path(fields.map(f => new Field(f.replace(/^\./, ''))))
       }
     }
 
@@ -255,6 +271,7 @@ namespace lexer {
     EOF = 'EOF',
     LeftDelim = 'LEFT_DELIM',
     BlockStart = 'BLOCK_START',
+    ClauseStart = 'CLAUSE_START',
     BlockEnd = 'BLOCK_END',
     Field = 'FIELD',
     Name = 'NAME',
@@ -347,6 +364,8 @@ namespace lexer {
     switch (cur.read()) {
       case '#':
         return [cur.advance(), lexBlockStart]
+      case ':':
+        return [cur, lexClauseStart]
       case '/':
         return [cur, lexBlockEnd]
       case '.':
@@ -496,6 +515,26 @@ namespace lexer {
     return [cur, lexInside]
   }
 
+  const lexClauseStart: LexFn = (cur, toks) => {
+    let val = ''
+    const start = cur.position()
+    cur = cur.advance() // Skip colon
+    while (!cur.isDone() && cur.accepts(ALPHANUMERIC)) {
+      val += cur.read()
+      cur = cur.advance()
+    }
+    if (val.length === 0) {
+      throw new TemplateSyntaxError(
+        new Range(start, cur.position()),
+        'expected clause name'
+      )
+    }
+    toks.push(
+      new Token(TokenType.ClauseStart, val, new Range(start, cur.position()))
+    )
+    return [cur, lexInside]
+  }
+
   const lexBlockEnd: LexFn = (cur, toks) => {
     let val = ''
     const start = cur.position()
@@ -567,6 +606,26 @@ export namespace ast {
       } else {
         return unexpectedToken(this, typ)
       }
+    }
+
+    public requireAll(
+      types: (lexer.TokenType | ((cur: TokenCursor) => true | never))[]
+    ): [TokenCursor, lexer.Token[]] {
+      let cur: TokenCursor = this
+      let toks = [] as lexer.Token[]
+      for (const typ of types) {
+        if (typeof typ === 'function') {
+          if (typ(cur)) {
+            toks.push(cur.read())
+            cur = cur.advance()
+          }
+        } else {
+          const [after, tok] = cur.require(typ)
+          cur = after
+          toks.push(tok)
+        }
+      }
+      return [cur, toks]
     }
 
     public requireClosingAction(val: string): [TokenCursor, lexer.Token] {
@@ -646,7 +705,8 @@ export namespace ast {
       public range: Range,
       public name: string,
       public field: string,
-      public children: Node[]
+      public children: Node[],
+      public clauses: Clause[]
     ) {
       super()
     }
@@ -658,8 +718,16 @@ export namespace ast {
         name: this.name,
         field: this.field,
         children: this.children.map(child => child.toJSON()),
+        clauses: this.clauses,
       }
     }
+  }
+
+  interface Clause {
+    range: Range
+    name: string
+    expr: Expression
+    children: Node[]
   }
 
   export abstract class Expression {
@@ -830,39 +898,83 @@ export namespace ast {
   }
 
   const parseBlockAction = (cur: TokenCursor): [TokenCursor, Node] => {
-    const [cur1, leftDelim] = cur.require(lexer.TokenType.LeftDelim)
-    const [cur2, start] = cur1.require(lexer.TokenType.BlockStart)
-    const [cur3, field] = cur2.require(lexer.TokenType.Field)
-    let [cur4] = cur3.require(lexer.TokenType.RightDelim)
+    // Block opening.
+    const [afterOpening, [leftDelim, start, field]] = cur.requireAll([
+      lexer.TokenType.LeftDelim,
+      lexer.TokenType.BlockStart,
+      lexer.TokenType.Field,
+      lexer.TokenType.RightDelim,
+    ])
 
-    const children = [] as Node[]
-    while (true) {
-      if (cur4.isDone() || cur.read().typ === lexer.TokenType.EOF) {
-        return unexpectedToken(cur4)
-      }
+    // Implicit clause.
+    const [afterImplicit, children] = parseNodeSeries(afterOpening)
 
-      if (
-        cur4.read().typ === lexer.TokenType.LeftDelim &&
-        cur4.advance().read().typ === lexer.TokenType.BlockEnd
-      ) {
-        const [cur5] = cur4.require(lexer.TokenType.LeftDelim)
-        const [cur6] = cur5.requireClosingAction(start.val)
-        const [cur7, rightDelim] = cur6.require(lexer.TokenType.RightDelim)
-        return [
-          cur7,
-          new BlockAction(
-            new Range(leftDelim.range.left, rightDelim.range.right),
-            start.val,
-            field.val,
-            children
-          ),
-        ]
-      }
+    // Any additional clauses.
+    cur = afterImplicit
+    const clauses = [] as Clause[]
+    while (hasMoreClauses(cur)) {
+      const [beforeExpr, [leftDelim, start]] = cur.requireAll([
+        lexer.TokenType.LeftDelim,
+        lexer.TokenType.ClauseStart,
+      ])
 
-      const [cur5, node] = parseAny(cur4)
-      cur4 = cur5
-      children.push(node)
+      const [afterExpr, expr] = parseExpression(beforeExpr)
+      const [afterOpening] = afterExpr.require(lexer.TokenType.RightDelim)
+      const [afterClause, children] = parseNodeSeries(afterOpening)
+
+      clauses.push({
+        range: new Range(leftDelim.range.left, afterClause.read().range.left),
+        name: start.val,
+        expr: expr,
+        children,
+      })
+      cur = afterClause
     }
+
+    // Block closing.
+    const [afterBlock, [, , rightDelim]] = cur.requireAll([
+      lexer.TokenType.LeftDelim,
+      cur => (cur.requireClosingAction(start.val), true),
+      lexer.TokenType.RightDelim,
+    ])
+
+    return [
+      afterBlock,
+      new BlockAction(
+        new Range(leftDelim.range.left, rightDelim.range.right),
+        start.val,
+        field.val,
+        children,
+        clauses
+      ),
+    ]
+  }
+
+  const parseNodeSeries = (cur: TokenCursor): [TokenCursor, Node[]] => {
+    const nodes = [] as Node[]
+    while (true) {
+      if (cur.isDone() || cur.read().typ === lexer.TokenType.EOF) {
+        return [cur, nodes]
+      } else if (cur.read().typ === lexer.TokenType.LeftDelim) {
+        if (
+          cur.advance().read().typ === lexer.TokenType.BlockEnd ||
+          cur.advance().read().typ === lexer.TokenType.ClauseStart
+        ) {
+          return [cur, nodes]
+        }
+      }
+
+      const [after, node] = parseAny(cur)
+      cur = after
+      nodes.push(node)
+    }
+  }
+
+  const hasMoreClauses = (cur: TokenCursor): boolean => {
+    return (
+      cur.read().typ === lexer.TokenType.LeftDelim &&
+      cur.advance().read().typ === lexer.TokenType.ClauseStart
+    )
   }
 
   export const toTree = (toks: lexer.Token[]): Root => {
