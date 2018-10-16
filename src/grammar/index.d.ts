@@ -9,10 +9,7 @@ export interface Inline {
   field: Field
 }
 
-export type Block =
-  | WithBlock
-  | IsBlock
-  | LoopBlock
+export type Block = WithBlock | IsBlock | LoopBlock
 
 export interface WithBlock {
   type: 'with'
@@ -24,7 +21,7 @@ export interface IsBlock {
   type: 'is'
   constraint: Type
   stmts: Statements
-  clauses: { constraint: Type, stmts: Statements }[]
+  clauses: { constraint: Type; stmts: Statements }[]
 }
 
 export interface LoopBlock {
@@ -38,22 +35,14 @@ interface Text {
   text: string
 }
 
-export type Expression =
-  | Field
-  | Type
+export type Expression = Field | Type
 
 export interface Field {
-  type: 'field',
+  type: 'field'
   segments: string[]
 }
 
-export type Type =
-  | List
-  | Str
-  | Num
-  | Bool
-  | True
-  | False
+export type Type = List | Str | Num | Bool | True | False
 
 export interface List {
   type: 'list'
