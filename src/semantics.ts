@@ -1,4 +1,5 @@
-import { Point, paths, ast } from './syntax'
+import * as paths from './paths'
+import * as tmpl from './grammar'
 import { TemplateSyntaxError } from './errors'
 
 export namespace types {

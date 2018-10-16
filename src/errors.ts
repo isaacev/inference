@@ -1,4 +1,4 @@
-import { Range, Point } from './syntax'
+import { Range, Point } from './points'
 
 export class TemplateError {
   constructor(public range: Range | Point, public message: string) {}
