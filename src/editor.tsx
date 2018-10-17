@@ -45,6 +45,9 @@ class App extends React.Component<AppProps, AppState> {
     } catch (err) {
       if (err instanceof TemplateError) {
         return err
+      } else if (err instanceof grammar.SyntaxError) {
+        console.log('got peg error', err)
+        return new TemplateError(new Point(0, 0), 'parser error')
       } else {
         throw err
       }
