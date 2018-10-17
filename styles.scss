@@ -39,9 +39,22 @@ main {
   flex-basis: 100%;
   flex-grow: 1;
   background: #eee;
-  overflow-y: scroll;
+}
 
-  pre {
-    margin: 16px;
+#error-message {
+  h2, h3 {
+    margin: 0;
+    padding: 1rem 1.5rem;
+    background: #b84846;
+    color: white;
+    font-family: 'Dank Mono', monospace;
+  }
+
+  h2 + h3 {
+    padding-top: 0;
+  }
+
+  .snippet {
+    margin: 1rem 1.5rem;
   }
 }
