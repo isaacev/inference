@@ -1,7 +1,9 @@
 import { Range, Point } from './points'
 
-export class TemplateError {
-  constructor(public range: Range | Point, public message: string) {}
+export class TemplateError extends Error {
+  constructor(public range: Range | Point, message: string) {
+    super(`${message} ${range.toString()}`)
+  }
 }
 
 export class TemplateSyntaxError extends TemplateError {
