@@ -1,5 +1,25 @@
 export function parse(tmpl: string): Statements
 
+interface Location {
+  start: {
+    offset: number
+    line: number
+    column: number
+  }
+  end: {
+    offset: number
+    line: number
+    column: number
+  }
+}
+
+export declare class SyntaxError {
+  message: string
+  expected: { type: string; text: string }[] | null
+  found: string | null
+  location: Location
+}
+
 export type Statements = Statement[]
 
 export type Statement = Inline | Block | Text
