@@ -1,6 +1,5 @@
 import * as paths from './paths'
 import * as tmpl from './grammar'
-import { TemplateSyntaxError } from './errors'
 
 export namespace types {
   export type Nilable = Type | Nil
