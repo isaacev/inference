@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "tsc --outDir dist",
-    "fmt": "prettier --write src/*.ts src/grammar/*.ts",
+    "fmt": "prettier --write src/*.ts src/*.js src/grammar/*.ts",
     "grammar": "pegjs -o src/grammar/index.js --format umd src/grammar/grammar.pegjs",
     "start": "parcel --no-hmr index.html"
   },
