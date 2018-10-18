@@ -20,10 +20,10 @@ WithBlock
   }
 
 OpenWith
-  = Left "#" "with" _ expr:Expr Right { return expr }
+  = LeftOpen "with" _ expr:Expr Right { return expr }
 
 CloseWith
-  = Left "/" "with" Right
+  = LeftClose "with" Right
 
 IsBlock
   = constraint:OpenIs stmts:Statements clauses:OrClause* CloseIs {
@@ -31,7 +31,7 @@ IsBlock
   }
 
 OpenIs
-  = Left "#" "is" _ type:Type Right { return type }
+  = LeftOpen "is" _ type:Type Right { return type }
 
 OrClause
   = Left ":" "or" _ constraint:Type Right stmts:Statements {
@@ -39,7 +39,7 @@ OrClause
   }
 
 CloseIs
-  = Left "/" "is" Right
+  = LeftClose "is" Right
 
 LoopBlock
   = field:OpenLoop stmts:Statements CloseLoop {
@@ -47,10 +47,10 @@ LoopBlock
   }
 
 OpenLoop
-  = Left "#" "loop" _ expr:Expr Right { return expr }
+  = LeftOpen "loop" _ expr:Expr Right { return expr }
 
 CloseLoop
-  = Left "/" "loop" Right
+  = LeftClose "loop" Right
 
 Expr
   = Field
@@ -80,6 +80,12 @@ Bool
 
 Left
   = "{{"
+
+LeftOpen
+  = "{{#"
+
+LeftClose
+  = "{{/"
 
 Right
   = "}}"
