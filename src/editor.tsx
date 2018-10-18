@@ -5,7 +5,7 @@ import { Controlled as CodeMirror } from 'react-codemirror2'
 import { Editor, EditorConfiguration, EditorChange, Pass } from 'codemirror'
 import * as localforage from 'localforage'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes, faPlus, faArrowsV } from '@fortawesome/pro-regular-svg-icons'
+import { faTimes } from '@fortawesome/pro-regular-svg-icons'
 
 // Import modes.
 require('./mode')
@@ -311,6 +311,21 @@ class Repeater extends React.Component<RepeaterProps, RepeaterState> {
   }
 
   public render() {
+    if (this.state.count <= 0) {
+      const path = this.props.path.concat(new paths.Index(0))
+      const type = this.props.type.element
+      return (
+        <div className="group group-repeater">
+          <div className="instance">
+            <InstanceControls />
+            <div className="inputs">
+                <Inputs path={path} type={type} />
+              </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="group group-repeater">
         {repeat(this.state.count, i => {
@@ -318,7 +333,7 @@ class Repeater extends React.Component<RepeaterProps, RepeaterState> {
           const type = this.props.type.element
           return (
             <div className="instance" key={i}>
-              <RepeaterControls />
+              <InstanceControls />
               <div className="inputs">
                 <Inputs path={path} type={type} />
               </div>
@@ -330,11 +345,10 @@ class Repeater extends React.Component<RepeaterProps, RepeaterState> {
   }
 }
 
-function RepeaterControls() {
+function InstanceControls() {
   return (
     <div className="controls">
       <button className="delete"><FontAwesomeIcon icon={faTimes} /></button>
-      <button className="move"><FontAwesomeIcon icon={faArrowsV} /></button>
     </div>
   )
 }

@@ -102,6 +102,7 @@ main {
   width: 48px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   background: #e8e8e8;
 
   button {
@@ -115,7 +116,11 @@ main {
     line-height: 32px;
     cursor: pointer;
     border-radius: 3px;
-    color: gray;
+    color: #bbb;
+  }
+
+  button + button {
+    margin-top: 0;
   }
 
   button:hover {
@@ -123,13 +128,25 @@ main {
     color: white;
   }
 
-  button.delete:hover {
+  button:focus {
+    outline: none;
+  }
+
+  button.delete:hover, button.delete:focus {
     background: #e74c3c;
     color: white;
   }
 
   button.move {
     cursor: grab;
+  }
+}
+
+#form .group-repeater .instance:hover > .controls button {
+  color: gray;
+
+  &:hover {
+    color: white;
   }
 }
 
