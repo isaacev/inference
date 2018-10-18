@@ -5,6 +5,10 @@ import { Controlled as CodeMirror } from 'react-codemirror2'
 import { Editor, EditorConfiguration, EditorChange } from 'codemirror'
 import * as localforage from 'localforage'
 
+// Import modes.
+require('./mode')
+require('codemirror/mode/xml/xml')
+
 // App libraries.
 import { Point, Range } from './points'
 import * as paths from './paths'
@@ -13,6 +17,13 @@ import { scope, types } from './semantics'
 
 const CODEMIRROR_OPTIONS: EditorConfiguration = {
   lineNumbers: true,
+  theme: 'blackboard',
+  mode: 'venture',
+  indentUnit: 2,
+  indentWithTabs: false,
+  extraKeys: {
+    Tab: cm => cm.getDoc().replaceSelection('  '),
+  },
 }
 
 interface AppProps {

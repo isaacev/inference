@@ -19,9 +19,13 @@ main {
   flex-basis: 100%;
   flex-grow: 1;
 
-  .CodeMirror {
+  .react-codemirror2, .CodeMirror {
     height: 100%;
+  }
+
+  .CodeMirror {
     font-family: 'Dank Mono', monospace;
+    color: rgba(248, 248, 248, .5);
   }
 
   .CodeMirror-gutters {
@@ -38,23 +42,36 @@ main {
 #right {
   flex-basis: 100%;
   flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #eee;
 }
 
 #error-message {
+  width: 100%;
+  max-width: 800px;
+  padding: 1rem 1.5rem 1.5rem;
+  background: #b84846;
+  border-radius: 3px;
+
   h2, h3 {
     margin: 0;
-    padding: 1rem 1.5rem;
+    padding: 0;
     background: #b84846;
     color: white;
     font-family: 'Dank Mono', monospace;
   }
 
-  h2 + h3 {
-    padding-top: 0;
+  h3 {
+    margin-top: .5rem;
   }
 
   .snippet {
-    margin: 1rem 1.5rem;
+    margin: 1.5rem 0 0;
+    padding: 1rem;
+    background: #eee;
+    border-radius: 3px;
+    overflow-x: scroll;
   }
 }
