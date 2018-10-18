@@ -20,7 +20,7 @@ WithBlock
   }
 
 OpenWith
-  = LeftOpen "with" _ expr:Expr Right { return expr }
+  = LeftOpen "with" __ expr:Expr Right { return expr }
 
 CloseWith
   = LeftClose "with" Right
@@ -31,10 +31,10 @@ IsBlock
   }
 
 OpenIs
-  = LeftOpen "is" _ type:Type Right { return type }
+  = LeftOpen "is" __ type:Type Right { return type }
 
 OrClause
-  = Left ":" "or" _ constraint:Type Right stmts:Statements {
+  = Left ":" "or" __ constraint:Type Right stmts:Statements {
     return { constraint, stmts }
   }
 
@@ -47,7 +47,7 @@ LoopBlock
   }
 
 OpenLoop
-  = LeftOpen "loop" _ expr:Expr Right { return expr }
+  = LeftOpen "loop" __ expr:Expr Right { return expr }
 
 CloseLoop
   = LeftClose "loop" Right
@@ -64,15 +64,15 @@ Type
   = Dict / List / Str / Num / Bool
 
 Dict
-  = "Dict" "(" __ pairs:PairList __ ")" { return { type: 'dict', pairs: pairs } }
-  / "Dict" "(" __ ")"                   { return { type: 'dict', pairs: [] } }
+  = "Dict" "(" _ pairs:PairList _ ")" { return { type: 'dict', pairs: pairs } }
+  / "Dict" "(" _ ")"                   { return { type: 'dict', pairs: [] } }
   / "Dict"                              { return { type: 'dict', pairs: [] } }
 
 PairList
-  = first:DictPair rest:(_ pair:DictPair { return pair })* { return [first, ...rest] }
+  = first:DictPair rest:(__ pair:DictPair { return pair })* { return [first, ...rest] }
 
 DictPair
-  = key:Ident __ ":" __ type:Type { return { key, type } }
+  = key:Ident _ ":" _ type:Type { return { key, type } }
 
 List
   = "List" "(" element:Type ")" { return { type: 'list', element } }
@@ -108,8 +108,8 @@ Right
 Text
   = text:$(!Left .)+ { return { type: 'text', text } }
 
-_ "Whitespace"
+__ "whitespace"
   = [ \t\r\n]+
 
-__ "Optional Whitespace"
+_ "optional whitespace"
   = [ \t\r\n]*
