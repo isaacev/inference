@@ -62,7 +62,12 @@ export interface Field {
   segments: string[]
 }
 
-export type Type = List | Str | Num | Bool | True | False
+export type Type = Dict | List | Str | Num | Bool | True | False
+
+export interface Dict {
+  type: 'dict'
+  pairs: { key: string; type: Type }[]
+}
 
 export interface List {
   type: 'list'

@@ -57,11 +57,22 @@ Expr
   / Type
 
 Field
-  = segments:($("." [a-zA-Z]+))+ { return { type: 'field', segments } }
-  / "."                          { return { type: 'field', segments: [] } }
+  = segments:($("." Ident))+ { return { type: 'field', segments } }
+  / "."                      { return { type: 'field', segments: [] } }
 
 Type
-  = List / Str / Num / Bool
+  = Dict / List / Str / Num / Bool
+
+Dict
+  = "Dict" "(" __ pairs:PairList __ ")" { return { type: 'dict', pairs: pairs } }
+  / "Dict" "(" __ ")"                   { return { type: 'dict', pairs: [] } }
+  / "Dict"                              { return { type: 'dict', pairs: [] } }
+
+PairList
+  = first:DictPair rest:(_ pair:DictPair { return pair })* { return [first, ...rest] }
+
+DictPair
+  = key:Ident __ ":" __ type:Type { return { key, type } }
 
 List
   = "List" "(" element:Type ")" { return { type: 'list', element } }
@@ -78,6 +89,9 @@ Bool
   = "Bool"  { return { type: 'bool' } }
   / "True"  { return { type: 'true' } }
   / "False" { return { type: 'false' } }
+
+Ident "Identifier"
+  = $([a-zA-Z]+)
 
 Left
   = "{{"
@@ -96,3 +110,6 @@ Text
 
 _ "Whitespace"
   = [ \t\r\n]+
+
+__ "Optional Whitespace"
+  = [ \t\r\n]*

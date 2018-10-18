@@ -594,6 +594,13 @@ export namespace scope {
 
   const inferType = (struct: tmpl.Type): types.Type => {
     switch (struct.type) {
+      case 'dict':
+        return new types.Dict(
+          struct.pairs.map(pair => ({
+            key: pair.key,
+            value: inferType(pair.type),
+          }))
+        )
       case 'list':
         if (struct.element) {
           return new types.List(inferType(struct.element))
