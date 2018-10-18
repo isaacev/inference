@@ -31,6 +31,9 @@
 
       // Types
       { regex: /\w+/, token: 'variable' },
+
+      // Values
+      { regex: /"(?:[^\\"]|\\.)*"?/, token: 'string' },
     ],
   })
 

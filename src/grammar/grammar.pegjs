@@ -68,7 +68,8 @@ List
   / "List"                      { return { type: 'list' } }
 
 Str
-  = "Str" { return { type: 'str' } }
+  = "Str"                     { return { type: 'str' } }
+  / '"' value:$([^\"\n]+) '"' { return { type: 'str', value } }
 
 Num
   = "Num" { return { type: 'num' } }

@@ -71,6 +71,7 @@ export interface List {
 
 export interface Str {
   type: 'str'
+  value?: string
 }
 
 export interface Num {

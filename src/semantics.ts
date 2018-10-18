@@ -175,6 +175,28 @@ export namespace types {
     }
   }
 
+  export class StrValue extends Type {
+    constructor(public value: string) {
+      super()
+    }
+
+    public accepts(that: Nilable): boolean {
+      if (that instanceof StrValue) {
+        return this.value === that.value
+      } else {
+        return false
+      }
+    }
+
+    public toJSON() {
+      return { type: 'str', value: this.value }
+    }
+
+    public toString() {
+      return `"${this.value.replace('\n', '\\n').replace('"', '\\"')}"`
+    }
+  }
+
   export class Num extends Type {
     public accepts(that: Nilable): boolean {
       if (that instanceof Num) {
@@ -579,7 +601,11 @@ export namespace scope {
           return new types.List()
         }
       case 'str':
-        return new types.Str()
+        if (struct.value) {
+          return new types.StrValue(struct.value)
+        } else {
+          return new types.Str()
+        }
       case 'num':
         return new types.Num()
       case 'bool':
