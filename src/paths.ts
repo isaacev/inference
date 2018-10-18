@@ -25,12 +25,28 @@ export class Field extends Segment {
 }
 
 export class Index extends Segment {
-  public equalTo(other: Segment) {
-    return other instanceof Index
+  constructor(public index?: number) {
+    super()
+  }
+
+  public hasIndex(): boolean {
+    return typeof this.index === 'number'
+  }
+
+  public equalTo(other: Segment): boolean {
+    if (other instanceof Index) {
+      return this.index === other.index
+    } else {
+      return false
+    }
   }
 
   public toString() {
-    return '[]'
+    if (this.hasIndex()) {
+      return `[${this.index}]`
+    } else {
+      return '[]'
+    }
   }
 
   public toJSON() {
@@ -82,6 +98,14 @@ export class Path {
     return new Path(this.segments.slice(1))
   }
 
+  public tail(): Segment | null {
+    if (this.length() === 0) {
+      return null
+    } else {
+      return this.segments[this.segments.length - 1]
+    }
+  }
+
   public hasHead(path: Path): boolean {
     if (path.length() > this.length()) {
       return false
@@ -95,6 +119,14 @@ export class Path {
       return new Path(this.segments.slice(path.length()))
     } else {
       return this
+    }
+  }
+
+  public concat(append: Path | Segment): Path {
+    if (append instanceof Segment) {
+      return new Path(this.segments.concat(append))
+    } else {
+      return new Path(this.segments.concat(append.segments))
     }
   }
 

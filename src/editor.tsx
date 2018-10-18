@@ -4,6 +4,8 @@ import * as ReactDOM from 'react-dom'
 import { Controlled as CodeMirror } from 'react-codemirror2'
 import { Editor, EditorConfiguration, EditorChange } from 'codemirror'
 import * as localforage from 'localforage'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTimes, faPlus, faArrowsV } from '@fortawesome/pro-regular-svg-icons'
 
 // Import modes.
 require('./mode')
@@ -33,7 +35,7 @@ interface AppProps {
 
 interface AppState {
   template: string
-  syntax: grammar.Statements | grammar.SyntaxError
+  model: scope.Root | grammar.SyntaxError
 }
 
 class App extends React.Component<AppProps, AppState> {
@@ -49,13 +51,31 @@ class App extends React.Component<AppProps, AppState> {
     }
   }
 
+  private static model(tmpl: string): scope.Root | grammar.SyntaxError {
+    try {
+      const stmts = grammar.parse(tmpl)
+      const model = scope.infer(stmts)
+      return model
+    } catch (err) {
+      if (err instanceof grammar.SyntaxError) {
+        return err
+      } else {
+        throw err
+      }
+    }
+  }
+
   constructor(props: AppProps) {
     super(props)
 
     // Initialize state.
+    // const syntax = App.parse(this.props.initialTemplate)
+    // const constraints = (syntax instanceof grammar.SyntaxError) ? App.infer(syntax)
+    // this.state = { template: this.props.initialTemplate, syntax, constraints }
+
     this.state = {
-      template: this.props.initialTemplate,
-      syntax: App.parse(this.props.initialTemplate),
+      template: props.initialTemplate,
+      model: App.model(props.initialTemplate),
     }
 
     // Bind component methods.
@@ -64,7 +84,10 @@ class App extends React.Component<AppProps, AppState> {
 
   private onBeforeChange(editor: Editor, diff: EditorChange, tmpl: string) {
     // Update state with new template and syntax tree.
-    this.setState({ template: tmpl, syntax: App.parse(tmpl) })
+    this.setState({
+      template: tmpl,
+      model: App.model(tmpl),
+    })
 
     // Trigger `onChange` callback.
     this.props.onChange(tmpl)
@@ -81,10 +104,7 @@ class App extends React.Component<AppProps, AppState> {
           />
         </div>
         <div id="right">
-          <DebugPanel
-            template={this.state.template}
-            syntax={this.state.syntax}
-          />
+          <DebugPanel template={this.state.template} model={this.state.model} />
         </div>
       </>
     )
@@ -93,20 +113,21 @@ class App extends React.Component<AppProps, AppState> {
 
 interface DebugPanelProps {
   template: string
-  syntax: grammar.Statements | grammar.SyntaxError
+  model: scope.Root | grammar.SyntaxError
 }
 
 class DebugPanel extends React.PureComponent<DebugPanelProps> {
   public render() {
-    if (this.props.syntax instanceof grammar.SyntaxError) {
+    if (this.props.model instanceof grammar.SyntaxError) {
       return (
-        <ErrorMessage
-          template={this.props.template}
-          error={this.props.syntax}
-        />
+        <ErrorMessage template={this.props.template} error={this.props.model} />
       )
     } else {
-      return <em>all good</em>
+      return (
+        <div id="form">
+          <Inputs path={new paths.Path()} type={this.props.model.context} />
+        </div>
+      )
     }
   }
 }
@@ -200,6 +221,122 @@ const series = (low: number, high: number): number[] => {
     }
     return range
   }
+}
+
+interface InputsProps {
+  path: paths.Path
+  type: types.Type
+}
+
+class Inputs extends React.PureComponent<InputsProps> {
+  public render() {
+    if (this.props.type instanceof types.Str) {
+      return <Textbox path={this.props.path} />
+    } else if (this.props.type instanceof types.Dict) {
+      return this.props.type.pairs.map(pair => {
+        const path = this.props.path.concat(new paths.Field(pair.key))
+        const type = pair.value
+
+        if (type instanceof types.Nil) {
+          return null
+        } else {
+          return <Inputs key={path.toString()} path={path} type={type} />
+        }
+      })
+    } else if (this.props.type instanceof types.List) {
+      const label = (this.props.path.tail() || '').toString()
+      const path = this.props.path
+      const type = this.props.type
+      return (
+        <div className="group">
+          <label>{label}</label>
+          <Repeater path={path} type={type} />
+        </div>
+      )
+    } else {
+      const path = this.props.path.toString()
+      const type = this.props.type.toString()
+      return (
+        <pre className="group">
+          {path} {type}
+        </pre>
+      )
+    }
+  }
+}
+
+function Textbox(props: { path: paths.Path }) {
+  const id = props.path.toString()
+  const label = (props.path.tail() || '').toString()
+  return (
+    <div className="group">
+      <label htmlFor={id}>{label}</label>
+      <input id={id} type="text" />
+    </div>
+  )
+}
+
+function Textarea(props: { id: paths.Path; label: string; rows?: number }) {
+  return (
+    <div className="group">
+      <label htmlFor={props.id.toString()}>{props.label}</label>
+      <textarea id={props.id.toString()} rows={props.rows || 4} />
+    </div>
+  )
+}
+
+interface RepeaterProps {
+  path: paths.Path
+  type: types.List
+}
+
+interface RepeaterState {
+  count: number
+}
+
+class Repeater extends React.Component<RepeaterProps, RepeaterState> {
+  constructor(props: RepeaterProps) {
+    super(props)
+    this.state = {
+      count: 3,
+    }
+  }
+
+  public render() {
+    return (
+      <div className="group group-repeater">
+        {repeat(this.state.count, i => {
+          const path = this.props.path.concat(new paths.Index(i))
+          const type = this.props.type.element
+          return (
+            <div className="instance" key={i}>
+              <RepeaterControls />
+              <div className="inputs">
+                <Inputs path={path} type={type} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+}
+
+function RepeaterControls() {
+  return (
+    <div className="controls">
+      <button className="delete"><FontAwesomeIcon icon={faTimes} /></button>
+      <button className="move"><FontAwesomeIcon icon={faArrowsV} /></button>
+    </div>
+  )
+}
+
+function repeat<T>(num: number, fn: (num: number) => T): T[] {
+  const acc = [] as T[]
+  for (let i = 0; i < num; i++) {
+    acc.push(fn(i))
+  }
+  return acc
 }
 
 localforage.getItem<string>('template').then(tmpl => {

@@ -45,7 +45,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eee;
+  background: #f2f2f2;
 }
 
 #error-message {
@@ -74,4 +74,98 @@ main {
     border-radius: 3px;
     overflow-x: scroll;
   }
+}
+
+#form {
+  width: 100%;
+  max-width: 800px;
+  padding: 1rem 1.5rem;
+}
+
+#form .group + .group {
+  margin-top: 2rem;
+}
+
+#form .group-repeater {
+  border: 1px solid #dedede;
+}
+
+#form .group-repeater .instance {
+  display: flex;
+}
+
+#form .group-repeater .instance + .instance {
+  border-top: 1px solid #dedede;
+}
+
+#form .group-repeater .controls {
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  background: #e8e8e8;
+
+  button {
+    width: 32px;
+    height: 32px;
+    margin: 8px;
+    display: block;
+    border-style: none;
+    background: none;
+    font-size: 18px;
+    line-height: 32px;
+    cursor: pointer;
+    border-radius: 3px;
+    color: gray;
+  }
+
+  button:hover {
+    background: gray;
+    color: white;
+  }
+
+  button.delete:hover {
+    background: #e74c3c;
+    color: white;
+  }
+
+  button.move {
+    cursor: grab;
+  }
+}
+
+#form .group-repeater .inputs {
+  padding: 1rem;
+  flex-basis: 100%;
+  border-left: 1px solid #dedede;
+}
+
+#form label {
+  margin-bottom: .5rem;
+  display: block;
+  text-transform: uppercase;
+  color: #888;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+#form select, input, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: .5rem;
+  display: block;
+  border: 2px solid #dedede;
+  border-radius: 3px;
+  background: white;
+  font-size: 1.2rem;
+  -webkit-appearance: none;
+
+  &:focus {
+    outline: none;
+    border-color: #bbb;
+  }
+}
+
+#form textarea {
+  resize: vertical;
 }
