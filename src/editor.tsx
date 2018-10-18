@@ -2,7 +2,7 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { Controlled as CodeMirror } from 'react-codemirror2'
-import { Editor, EditorConfiguration, EditorChange } from 'codemirror'
+import { Editor, EditorConfiguration, EditorChange, Pass } from 'codemirror'
 import * as localforage from 'localforage'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes, faPlus, faArrowsV } from '@fortawesome/pro-regular-svg-icons'
@@ -22,9 +22,17 @@ const CODEMIRROR_OPTIONS: EditorConfiguration = {
   theme: 'blackboard',
   mode: 'venture',
   indentUnit: 2,
+  tabSize: 2,
   indentWithTabs: false,
   extraKeys: {
-    Tab: cm => cm.getDoc().replaceSelection('  '),
+    'Shift-Tab': 'indentLess',
+    'Tab': (cm) => {
+      if (cm.getDoc().getSelection() === '') {
+        cm.getDoc().replaceSelection('  ')
+      } else {
+        return Pass
+      }
+    },
   },
 }
 
