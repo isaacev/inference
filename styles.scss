@@ -43,15 +43,17 @@ main {
   flex-basis: 100%;
   flex-grow: 1;
   display: flex;
-  align-items: center;
   justify-content: center;
   background: #f2f2f2;
+  overflow-y: scroll;
 }
 
 #error-message {
   width: 100%;
   max-width: 800px;
+  margin-top: 64px;
   padding: 1rem 1.5rem 1.5rem;
+  align-self: flex-start;
   background: #b84846;
   border-radius: 3px;
 
@@ -73,6 +75,15 @@ main {
     background: #eee;
     border-radius: 3px;
     overflow-x: scroll;
+
+    .code {
+      color: gray;
+    }
+
+    .is-error, .underline {
+      color: #b84846;
+      font-weight: bold;
+    }
   }
 }
 
