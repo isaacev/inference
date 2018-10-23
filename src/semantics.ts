@@ -175,7 +175,7 @@ export namespace types {
     }
   }
 
-  export class StrValue extends Type {
+  export class StrValue extends Str {
     constructor(public value: string) {
       super()
     }
@@ -569,6 +569,26 @@ export namespace scope {
     }
   }
 
+  export class Match extends ChildScope {
+    public branchTypes = [] as types.Type[]
+
+    public constrain(path: paths.Path, typ: types.Type) {
+      this.context = types.smallestCommonType(path, this.context, typ)
+    }
+
+    public propogate(path: paths.Path, typ: types.Type) {
+      this.context = types.largestCommonType(path, this.context, typ)
+    }
+
+    public addBranch(typ: types.Type) {
+      this.branchTypes.push(typ)
+    }
+
+    public toString() {
+      return `match ${this.context.toString()}`
+    }
+  }
+
   export const infer = (stmts: tmpl.Statements): Root => {
     const scope = new Root(new types.Unknown())
     stmts.forEach(stmt => inferStmt(scope, stmt))
@@ -588,6 +608,9 @@ export namespace scope {
         break
       case 'loop':
         inferLoop(scope, stmt)
+        break
+      case 'match':
+        inferMatch(scope, stmt)
         break
     }
   }
@@ -666,6 +689,13 @@ export namespace scope {
     const path = paths.Path.fromFields(stmt.field.segments)
     const subscope = new Loop(scope, path, scope.lookup(path))
     stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
+  }
+
+  const inferMatch = (scope: Scope, stmt: tmpl.MatchBlock) => {
+    const matchScope = new Match(
+      scope,
+      paths.Path.fromFields(stmt.field.segments)
+    )
   }
 
   const inferExpr = (scope: Scope, expr: tmpl.Expression) => {
