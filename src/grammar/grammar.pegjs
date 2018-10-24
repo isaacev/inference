@@ -11,7 +11,6 @@ Inline
 
 Block
   = WithBlock
-  / IsBlock
   / LoopBlock
 
 WithBlock
@@ -24,22 +23,6 @@ OpenWith
 
 CloseWith
   = LeftClose "with" Right
-
-IsBlock
-  = constraint:OpenIs stmts:Statements clauses:OrClause* CloseIs {
-    return { type: 'is', constraint, stmts, clauses }
-  }
-
-OpenIs
-  = LeftOpen "is" __ type:Type Right { return type }
-
-OrClause
-  = Left ":" "or" __ constraint:Type Right stmts:Statements {
-    return { constraint, stmts }
-  }
-
-CloseIs
-  = LeftClose "is" Right
 
 LoopBlock
   = field:OpenLoop stmts:Statements CloseLoop {

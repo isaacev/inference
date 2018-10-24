@@ -29,19 +29,12 @@ export interface Inline {
   field: Field
 }
 
-export type Block = WithBlock | IsBlock | LoopBlock
+export type Block = WithBlock | LoopBlock
 
 export interface WithBlock {
   type: 'with'
   field: Field
   stmts: Statements
-}
-
-export interface IsBlock {
-  type: 'is'
-  constraint: Type
-  stmts: Statements
-  clauses: { constraint: Type; stmts: Statements }[]
 }
 
 export interface LoopBlock {

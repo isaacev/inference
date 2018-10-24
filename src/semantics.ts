@@ -522,24 +522,6 @@ export namespace scope {
     }
   }
 
-  export class Is extends ChildScope {
-    constructor(parent: Scope, context: types.Type) {
-      super(parent, new paths.Path(), context)
-    }
-
-    public constrain(path: paths.Path, typ: types.Type) {
-      this.context = types.smallestCommonType(path, this.context, typ)
-    }
-
-    public propogate(path: paths.Path, typ: types.Type) {
-      this.context = types.largestCommonType(path, this.context, typ)
-    }
-
-    public toString() {
-      return `is ${this.context.toString()}`
-    }
-  }
-
   export class Loop extends ChildScope {
     constructor(parent: Scope, path: paths.Path, context?: types.Type) {
       if (context instanceof types.Unknown) {
@@ -603,9 +585,6 @@ export namespace scope {
       case 'with':
         inferWith(scope, stmt)
         break
-      case 'is':
-        inferIs(scope, stmt)
-        break
       case 'loop':
         inferLoop(scope, stmt)
         break
@@ -656,33 +635,6 @@ export namespace scope {
   const inferWith = (scope: Scope, stmt: tmpl.WithBlock) => {
     const subscope = new With(scope, paths.Path.fromFields(stmt.field.segments))
     stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
-  }
-
-  const inferIs = (scope: Scope, stmt: tmpl.IsBlock) => {
-    const union = [stmt, ...stmt.clauses].reduce(
-      (acc, branch, i) => {
-        const guard = inferType(branch.constraint)
-        const subscope = new Is(scope, guard)
-        branch.stmts.forEach(stmt => inferStmt(subscope, stmt))
-
-        if (acc.length === 0) {
-          return [subscope.context]
-        } else {
-          const union = types.simplify(acc)
-          if (union.accepts(subscope.context)) {
-            console.error('branch #' + i + ' is unreachable')
-            return acc
-          } else if (union instanceof types.Or) {
-            return union.members.concat(subscope.context)
-          } else {
-            return [union, subscope.context]
-          }
-        }
-      },
-      [] as types.Type[]
-    )
-
-    scope.constrain(new paths.Path(), types.simplify(union))
   }
 
   const inferLoop = (scope: Scope, stmt: tmpl.LoopBlock) => {
