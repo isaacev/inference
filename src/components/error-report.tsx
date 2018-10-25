@@ -3,12 +3,13 @@ import * as React from 'react'
 import classnames from 'classnames'
 
 // App libraries.
+import { TypeError } from '../semantics'
 import { SyntaxError, Location } from '../grammar'
 import { Point, Range } from '../points'
 
 interface Props {
   template: string
-  error: SyntaxError
+  error: SyntaxError | TypeError
 }
 
 export default class ErrorReport extends React.PureComponent<Props> {
@@ -17,9 +18,11 @@ export default class ErrorReport extends React.PureComponent<Props> {
       <div id="error-message">
         <h2 className="headline">Syntax error</h2>
         <h3>{this.props.error.message}</h3>
-        <pre className="snippet">
-          {toSnippet(this.props.template, this.props.error.location)}
-        </pre>
+        {this.props.error instanceof SyntaxError && (
+          <pre className="snippet">
+            {toSnippet(this.props.template, this.props.error.location)}
+          </pre>
+        )}
       </div>
     )
   }

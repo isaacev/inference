@@ -9,16 +9,19 @@ require('codemirror/mode/xml/xml')
 
 // App libraries.
 import * as grammar from '../grammar'
-import { scope } from '../semantics'
+import { TypeError, scope } from '../semantics'
 
 interface Props {
   initialTemplate: string
-  onChange: (template: string, model: scope.Root | grammar.SyntaxError) => void
+  onChange: (
+    template: string,
+    model: scope.Root | grammar.SyntaxError | TypeError
+  ) => void
 }
 
 interface State {
   template: string
-  model: scope.Root | grammar.SyntaxError
+  model: scope.Root | grammar.SyntaxError | TypeError
 }
 
 export default class Editor extends React.Component<Props, State> {
@@ -77,13 +80,15 @@ export default class Editor extends React.Component<Props, State> {
   }
 }
 
-const buildModel = (template: string): scope.Root | grammar.SyntaxError => {
+const buildModel = (
+  template: string
+): scope.Root | grammar.SyntaxError | TypeError => {
   try {
     const stmts = grammar.parse(template)
     const model = scope.infer(stmts)
     return model
   } catch (err) {
-    if (err instanceof grammar.SyntaxError) {
+    if (err instanceof grammar.SyntaxError || err instanceof TypeError) {
       return err
     } else {
       throw err

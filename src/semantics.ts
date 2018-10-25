@@ -1,6 +1,10 @@
 import * as paths from './paths'
 import * as tmpl from './grammar'
 
+export class TypeError {
+  constructor(public message: string) {}
+}
+
 export namespace types {
   export type Nilable = Type | Nil
 
@@ -285,7 +289,9 @@ export namespace types {
       } else if (ctx instanceof Dict) {
         return followPath(path.rest(), ctx.getValue(first.name))
       } else {
-        throw new Error(`no field "${first.name}" on type ${ctx.toString()}`)
+        throw new TypeError(
+          `no field "${first.name}" on type ${ctx.toString()}`
+        )
       }
     } else if (first instanceof paths.Index) {
       if (ctx instanceof Unknown) {
@@ -293,7 +299,7 @@ export namespace types {
       } else if (ctx instanceof List) {
         return followPath(path.rest(), ctx.element)
       } else {
-        throw new Error(`no index on type ${ctx.toString()}`)
+        throw new TypeError(`no index on type ${ctx.toString()}`)
       }
     } else if (first instanceof paths.Branch) {
       if (ctx instanceof Unknown) {
@@ -304,10 +310,10 @@ export namespace types {
           ctx.branches[first.branch] || new Unknown()
         )
       } else {
-        throw new Error(`no branches on type ${ctx.toString()}`)
+        throw new TypeError(`no branches on type ${ctx.toString()}`)
       }
     } else {
-      throw new Error(`unknown path segment`)
+      throw new TypeError(`unknown path segment`)
     }
   }
 
@@ -331,7 +337,7 @@ export namespace types {
     } else if (t2.accepts(t1)) {
       return t2
     } else {
-      throw new Error(`cannot unify ${t1} and ${t2}`)
+      throw new TypeError(`cannot unify ${t1} and ${t2}`)
     }
   }
 
@@ -353,7 +359,7 @@ export namespace types {
     } else if (t2.accepts(t1)) {
       return t1
     } else {
-      throw new Error(`cannot intersect ${t1} and ${t2}`)
+      throw new TypeError(`cannot intersect ${t1} and ${t2}`)
     }
   }
 
@@ -381,7 +387,7 @@ export namespace types {
             ])
           )
         } else {
-          throw new Error(`no field "${first.name}" on type ${ctx}`)
+          throw new TypeError(`no field "${first.name}" on type ${ctx}`)
         }
       } else if (first instanceof paths.Index) {
         if (ctx instanceof Unknown) {
@@ -389,7 +395,7 @@ export namespace types {
         } else if (ctx instanceof List) {
           return combine(ctx, new List(rec(path.rest(), ctx.element, cons)))
         } else {
-          throw new Error(`no index on type ${ctx}`)
+          throw new TypeError(`no index on type ${ctx}`)
         }
       } else if (first instanceof paths.Branch) {
         if (ctx instanceof Unknown) {
@@ -408,10 +414,10 @@ export namespace types {
             return new Or(branches)
           }
         } else {
-          throw new Error(`no branches on type ${ctx}`)
+          throw new TypeError(`no branches on type ${ctx}`)
         }
       } else {
-        throw new Error(`unknown path segment`)
+        throw new TypeError(`unknown path segment`)
       }
     }
     return rec

@@ -5,7 +5,7 @@ import * as localforage from 'localforage'
 
 // App libraries.
 import { SyntaxError, parse } from './grammar'
-import { scope } from './semantics'
+import { TypeError, scope } from './semantics'
 
 // App components.
 import Editor from './components/editor'
@@ -19,7 +19,7 @@ interface Props {
 
 interface State {
   template: string
-  analysis: scope.Root | SyntaxError
+  analysis: scope.Root | SyntaxError | TypeError
 }
 
 class App extends React.Component<Props, State> {
@@ -34,7 +34,10 @@ class App extends React.Component<Props, State> {
     this.handleChange = this.handleChange.bind(this)
   }
 
-  private handleChange(template: string, analysis: scope.Root | SyntaxError) {
+  private handleChange(
+    template: string,
+    analysis: scope.Root | SyntaxError | TypeError
+  ) {
     this.setState({ template, analysis })
     this.props.onChange(template)
   }
@@ -63,12 +66,12 @@ class App extends React.Component<Props, State> {
   }
 }
 
-const toAnalysis = (template: string): scope.Root | SyntaxError => {
+const toAnalysis = (template: string): scope.Root | SyntaxError | TypeError => {
   try {
     const stmts = parse(template)
     return scope.infer(stmts)
   } catch (err) {
-    if (err instanceof SyntaxError) {
+    if (err instanceof SyntaxError || err instanceof TypeError) {
       return err
     } else {
       throw err
