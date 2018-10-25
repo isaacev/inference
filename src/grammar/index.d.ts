@@ -48,42 +48,7 @@ interface Text {
   text: string
 }
 
-export type Expression = Field | Type
-
 export interface Field {
   type: 'field'
   segments: string[]
-}
-
-export type Type = Dict | List | Str | Num | Bool | True | False
-
-export interface Dict {
-  type: 'dict'
-  pairs: { key: string; type: Type }[]
-}
-
-export interface List {
-  type: 'list'
-  element?: Type
-}
-
-export interface Str {
-  type: 'str'
-  value?: string
-}
-
-export interface Num {
-  type: 'num'
-}
-
-export interface Bool {
-  type: 'bool'
-}
-
-export interface True {
-  type: 'true'
-}
-
-export interface False {
-  type: 'false'
 }

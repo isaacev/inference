@@ -19,7 +19,7 @@ WithBlock
   }
 
 OpenWith
-  = LeftOpen "with" __ expr:Expr Right { return expr }
+  = LeftOpen "with" __ field:Field Right { return field }
 
 CloseWith
   = LeftClose "with" Right
@@ -30,48 +30,14 @@ LoopBlock
   }
 
 OpenLoop
-  = LeftOpen "loop" __ expr:Expr Right { return expr }
+  = LeftOpen "loop" __ field:Field Right { return field }
 
 CloseLoop
   = LeftClose "loop" Right
 
-Expr
-  = Field
-  / Type
-
 Field
   = segments:($("." Ident))+ { return { type: 'field', segments } }
   / "."                      { return { type: 'field', segments: [] } }
-
-Type
-  = Dict / List / Str / Num / Bool
-
-Dict
-  = "Dict" "(" _ pairs:PairList _ ")" { return { type: 'dict', pairs: pairs } }
-  / "Dict" "(" _ ")"                   { return { type: 'dict', pairs: [] } }
-  / "Dict"                              { return { type: 'dict', pairs: [] } }
-
-PairList
-  = first:DictPair rest:(__ pair:DictPair { return pair })* { return [first, ...rest] }
-
-DictPair
-  = key:Ident _ ":" _ type:Type { return { key, type } }
-
-List
-  = "List" "(" element:Type ")" { return { type: 'list', element } }
-  / "List"                      { return { type: 'list' } }
-
-Str
-  = "Str"                     { return { type: 'str' } }
-  / '"' value:$([^\"\n]+) '"' { return { type: 'str', value } }
-
-Num
-  = "Num" { return { type: 'num' } }
-
-Bool
-  = "Bool"  { return { type: 'bool' } }
-  / "True"  { return { type: 'true' } }
-  / "False" { return { type: 'false' } }
 
 Ident "Identifier"
   = $([a-zA-Z]+)

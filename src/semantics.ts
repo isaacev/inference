@@ -594,42 +594,8 @@ export namespace scope {
     }
   }
 
-  const inferType = (struct: tmpl.Type): types.Type => {
-    switch (struct.type) {
-      case 'dict':
-        return new types.Dict(
-          struct.pairs.map(pair => ({
-            key: pair.key,
-            value: inferType(pair.type),
-          }))
-        )
-      case 'list':
-        if (struct.element) {
-          return new types.List(inferType(struct.element))
-        } else {
-          return new types.List()
-        }
-      case 'str':
-        if (struct.value) {
-          return new types.StrValue(struct.value)
-        } else {
-          return new types.Str()
-        }
-      case 'num':
-        return new types.Num()
-      case 'bool':
-        return new types.Bool()
-      case 'true':
-        return new types.True()
-      case 'false':
-        return new types.False()
-      default:
-        throw new Error('unknown type: ' + JSON.stringify(struct))
-    }
-  }
-
   const inferInline = (scope: Scope, stmt: tmpl.Inline) => {
-    inferExpr(scope, stmt.field)
+    scope.constrain(paths.Path.fromFields(stmt.field.segments), new types.Str())
   }
 
   const inferWith = (scope: Scope, stmt: tmpl.WithBlock) => {
@@ -648,13 +614,5 @@ export namespace scope {
       scope,
       paths.Path.fromFields(stmt.field.segments)
     )
-  }
-
-  const inferExpr = (scope: Scope, expr: tmpl.Expression) => {
-    switch (expr.type) {
-      case 'field':
-        scope.constrain(paths.Path.fromFields(expr.segments), new types.Str())
-        break
-    }
   }
 }
