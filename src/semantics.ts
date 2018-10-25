@@ -420,69 +420,6 @@ export namespace types {
   export const largestCommonType = commonType(unify)
 
   export const smallestCommonType = commonType(intersect)
-
-  const flattenMembers = (ts: Type[]): Type[] => {
-    return ts
-      .map(t => {
-        if (t instanceof Or) {
-          return flattenMembers(t.members)
-        } else {
-          return [t]
-        }
-      })
-      .reduce((flat, nested) => flat.concat(nested), [])
-  }
-
-  const maximalTypes = <T extends Type>(ts: T[]): T[] => {
-    let maximal = [] as T[]
-    ts.forEach(t => {
-      if (maximal.some(m => m.accepts(t))) {
-        // There is already some type in `maximal` that accepts `t`.
-        return
-      } else {
-        // Remove any members of `maximal` that are accepted by `t`.
-        maximal = maximal.filter(m => t.accepts(m) === false).concat(t)
-      }
-    })
-    return maximal
-  }
-
-  const isType = (T: typeof Type, t: Type): boolean => {
-    return t instanceof T
-  }
-
-  const hasType = (T: typeof Type, ts: Type[]): boolean => {
-    return ts.some(isType.bind(null, T))
-  }
-
-  export const simplify = (ts: Type[]): Type => {
-    ts = flattenMembers(ts).reduce(
-      (acc, t) => {
-        if (acc.some(m => m.accepts(t))) {
-          // `t` is a subtype of some types in `acc`.
-          return acc
-        } else if (acc.some(m => t.accepts(m))) {
-          // `t` is a supertype of some types in `acc`.
-          return acc.filter(m => !t.accepts(m)).concat(t)
-        } else {
-          // `t` is neither a supertype nor a subtype of any types in `acc`.
-          return acc.concat(t)
-        }
-      },
-      [] as Type[]
-    )
-
-    // If `ts` contains both 'True' and 'False', replace with 'Bool'.
-    if (hasType(True, ts) && hasType(False, ts)) {
-      ts = ts.filter(t => !isType(Bool, t)).concat(new Bool())
-    }
-
-    if (ts.length < 2) {
-      return ts[0]
-    } else {
-      return new Or(ts[0], ts[1], ts.slice(2))
-    }
-  }
 }
 
 export namespace scope {
