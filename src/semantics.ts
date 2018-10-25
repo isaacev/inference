@@ -45,27 +45,33 @@ export namespace types {
   }
 
   export class Or extends Type {
-    public members: Type[]
-
-    constructor(m0: Type, m1: Type, ms: Type[]) {
+    constructor(public branches: Type[] = []) {
       super()
-      this.members = [m0, m1, ...ms]
     }
 
     public accepts(that: Nilable): boolean {
       if (that instanceof Or) {
-        return that.members.every(member => this.accepts(member))
+        return that.branches.every(b => this.accepts(b))
       } else {
-        return this.members.some(member => member.accepts(that))
+        return this.branches.some(b => b.accepts(that))
       }
     }
 
     public toJSON() {
-      return { type: 'or', members: this.members }
+      return { type: 'or', branches: this.branches }
     }
 
     public toString(): string {
-      return this.members.map(member => member.toString()).join('|')
+      return `Or(${this.branches.map(b => b.toString()).join(' ')})`
+    }
+
+    public static unify(t1: Or, t2: Or): Type {
+      // Hacky and not logically complete.
+      if (t1.branches.length === t2.branches.length) {
+        return new Or(t1.branches.map((b1, i) => unify(b1, t2.branches[i])))
+      } else {
+        return t1.branches.length > t2.branches.length ? t1 : t2
+      }
     }
   }
 
@@ -289,6 +295,17 @@ export namespace types {
       } else {
         throw new Error(`no index on type ${ctx.toString()}`)
       }
+    } else if (first instanceof paths.Branch) {
+      if (ctx instanceof Unknown) {
+        return new Unknown()
+      } else if (ctx instanceof Or) {
+        return followPath(
+          path.rest(),
+          ctx.branches[first.branch] || new Unknown()
+        )
+      } else {
+        throw new Error(`no branches on type ${ctx.toString()}`)
+      }
     } else {
       throw new Error(`unknown path segment`)
     }
@@ -305,6 +322,8 @@ export namespace types {
       return Dict.merge(t1, t2, (t1, t2) => unify(t1, t2))
     } else if (t1 instanceof List && t2 instanceof List) {
       return new List(unify(t1.element, t2.element))
+    } else if (t1 instanceof Or && t2 instanceof Or) {
+      return Or.unify(t1, t2)
     }
 
     if (t1.accepts(t2)) {
@@ -371,6 +390,25 @@ export namespace types {
           return combine(ctx, new List(rec(path.rest(), ctx.element, cons)))
         } else {
           throw new Error(`no index on type ${ctx}`)
+        }
+      } else if (first instanceof paths.Branch) {
+        if (ctx instanceof Unknown) {
+          return new Or([rec(path.rest(), new Unknown(), cons)])
+        } else if (ctx instanceof Or) {
+          const branches = ctx.branches.slice()
+          if (branches.length > first.branch) {
+            branches[first.branch] = rec(
+              path.rest(),
+              branches[first.branch] || new Unknown(),
+              cons
+            )
+            return new Or(branches)
+          } else {
+            branches.push(rec(path.rest(), new Unknown(), cons))
+            return new Or(branches)
+          }
+        } else {
+          throw new Error(`no branches on type ${ctx}`)
         }
       } else {
         throw new Error(`unknown path segment`)
@@ -551,23 +589,23 @@ export namespace scope {
     }
   }
 
-  export class Match extends ChildScope {
-    public branchTypes = [] as types.Type[]
+  export class Branch extends ChildScope {
+    constructor(parent: Scope, path: paths.Path, ctx?: types.Type) {
+      super(parent, path, ctx)
+    }
 
     public constrain(path: paths.Path, typ: types.Type) {
       this.context = types.smallestCommonType(path, this.context, typ)
+      this.parent.propogate(this.path.concat(path), typ)
     }
 
     public propogate(path: paths.Path, typ: types.Type) {
       this.context = types.largestCommonType(path, this.context, typ)
-    }
-
-    public addBranch(typ: types.Type) {
-      this.branchTypes.push(typ)
+      this.parent.propogate(this.path.concat(path), typ)
     }
 
     public toString() {
-      return `match ${this.context.toString()}`
+      return `branch ${this.context.toString()}`
     }
   }
 
@@ -610,9 +648,18 @@ export namespace scope {
   }
 
   const inferMatch = (scope: Scope, stmt: tmpl.MatchBlock) => {
-    const matchScope = new Match(
-      scope,
-      paths.Path.fromFields(stmt.field.segments)
-    )
+    const basePath = paths.Path.fromFields(stmt.field.segments)
+
+    // Analyze initial case.
+    const branchPath = basePath.concat(new paths.Branch(0))
+    const subscope = new Branch(scope, branchPath, scope.lookup(branchPath))
+    stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
+
+    // Analyze additional cases.
+    stmt.clauses.forEach((stmts, index) => {
+      const branchPath = basePath.concat(new paths.Branch(index + 1))
+      const subscope = new Branch(scope, branchPath, scope.lookup(branchPath))
+      stmts.forEach(stmt => inferStmt(subscope, stmt))
+    })
   }
 }

@@ -29,7 +29,7 @@ export interface Inline {
   field: Field
 }
 
-export type Block = WithBlock | LoopBlock
+export type Block = WithBlock | LoopBlock | MatchBlock
 
 export interface WithBlock {
   type: 'with'
@@ -41,6 +41,13 @@ export interface LoopBlock {
   type: 'loop'
   field: Field
   stmts: Statements
+}
+
+export interface MatchBlock {
+  type: 'match'
+  field: Field
+  stmts: Statements
+  clauses: Statements[]
 }
 
 interface Text {

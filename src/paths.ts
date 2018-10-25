@@ -56,6 +56,31 @@ export class Index extends Segment {
   }
 }
 
+export class Branch extends Segment {
+  constructor(public branch: number) {
+    super()
+  }
+
+  public equalTo(other: Segment): boolean {
+    if (other instanceof Branch) {
+      return this.branch === other.branch
+    } else {
+      return false
+    }
+  }
+
+  public toString() {
+    return `|${this.branch}|`
+  }
+
+  public toJSON() {
+    return {
+      typ: 'branch',
+      branch: this.branch,
+    }
+  }
+}
+
 export class Path {
   public static fromString(path: string): Path {
     if (path === '.') {

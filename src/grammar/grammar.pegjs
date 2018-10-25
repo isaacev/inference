@@ -12,6 +12,7 @@ Inline
 Block
   = WithBlock
   / LoopBlock
+  / MatchBlock
 
 WithBlock
   = field:OpenWith stmts:Statements CloseWith {
@@ -35,9 +36,23 @@ OpenLoop
 CloseLoop
   = LeftClose "loop" Right
 
+MatchBlock
+  = "{{#match" __ field:ChildField "}}" stmts:Statements clauses:OrClause* "{{/match}}"
+    { return { type: 'match', field, stmts, clauses } }
+
+OrClause
+  = "{{:or}}" stmts:Statements
+    { return stmts }
+
 Field
+  = ChildField
+  / RootField
+
+ChildField
   = segments:($("." Ident))+ { return { type: 'field', segments } }
-  / "."                      { return { type: 'field', segments: [] } }
+
+RootField
+  = "." { return { type: 'field', segments: [] } }
 
 Ident "Identifier"
   = $([a-zA-Z]+)
