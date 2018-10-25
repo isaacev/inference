@@ -53,7 +53,7 @@ class App extends React.Component<Props, State> {
         </div>
         <div id="right">
           {this.state.analysis instanceof scope.Root ? (
-            <Form model={this.state.analysis} />
+            <Form type={this.state.analysis.context} />
           ) : (
             <ErrorReport
               template={this.state.template}

@@ -155,6 +155,15 @@ export class Path {
     }
   }
 
+  public toLabel(): string {
+    const tail = this.tail()
+    if (tail !== null && tail instanceof Field) {
+      return tail.name
+    } else {
+      return ''
+    }
+  }
+
   public toString(): string {
     if (this.length() === 0) {
       return '.'

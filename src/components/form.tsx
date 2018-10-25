@@ -2,27 +2,22 @@
 import * as React from 'react'
 
 // App libraries.
-import * as grammar from '../grammar'
-import { scope } from '../semantics'
+import { types } from '../semantics'
+import * as paths from '../paths'
 
 // Components.
-import ErrorReport from './error-report'
+import Any from './inputs/any'
 
 interface Props {
-  model: scope.Root
+  type: types.Type
 }
 
-interface State {
-  // ...
-}
-
-export default class Form extends React.Component<Props, State> {
+export default class Form extends React.Component<Props> {
   public render() {
     return (
-      <div className="form">
-        <h1>form</h1>
-        <p><code>{this.props.model.toString()}</code></p>
-      </div>
+      <form className="form">
+        <Any path={new paths.Path()} type={this.props.type} />
+      </form>
     )
   }
 }

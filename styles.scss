@@ -19,13 +19,14 @@ main {
   flex-basis: 100%;
   flex-grow: 1;
 
-  .react-codemirror2, .CodeMirror {
+  .react-codemirror2,
+  .CodeMirror {
     height: 100%;
   }
 
   .CodeMirror {
     font-family: 'Dank Mono', monospace;
-    color: rgba(248, 248, 248, .5);
+    color: rgba(248, 248, 248, 0.5);
   }
 
   .CodeMirror-gutters {
@@ -35,14 +36,13 @@ main {
   }
 
   .text-marker-red {
-    background: rgba(149, 165, 166, .3);
+    background: rgba(149, 165, 166, 0.3);
   }
 }
 
 #right {
   flex-basis: 100%;
   flex-grow: 1;
-  display: flex;
   justify-content: center;
   background: #f2f2f2;
   overflow-y: scroll;
@@ -51,13 +51,13 @@ main {
 #error-message {
   width: 100%;
   max-width: 800px;
-  margin-top: 64px;
+  margin: 64px auto 1rem auto;
   padding: 1rem 1.5rem 1.5rem;
-  align-self: flex-start;
   background: #b84846;
   border-radius: 3px;
 
-  h2, h3 {
+  h2,
+  h3 {
     margin: 0;
     padding: 0;
     background: #b84846;
@@ -66,7 +66,7 @@ main {
   }
 
   h3 {
-    margin-top: .5rem;
+    margin-top: 0.5rem;
   }
 
   .snippet {
@@ -80,36 +80,37 @@ main {
       color: gray;
     }
 
-    .is-error, .underline {
+    .is-error,
+    .underline {
       color: #b84846;
       font-weight: bold;
     }
   }
 }
 
-#form {
-  width: 100%;
+.form {
   max-width: 800px;
+  margin: 0 auto;
   padding: 1rem 1.5rem;
 }
 
-#form .group + .group {
+.form .group + .group {
   margin-top: 2rem;
 }
 
-#form .group-repeater {
+.form .group-repeater {
   border: 1px solid #dedede;
 }
 
-#form .group-repeater .instance {
+.form .group-repeater .instance {
   display: flex;
 }
 
-#form .group-repeater .instance + .instance {
+.form .group-repeater .instance + .instance {
   border-top: 1px solid #dedede;
 }
 
-#form .group-repeater .controls {
+.form .group-repeater .controls {
   width: 48px;
   display: flex;
   flex-direction: column;
@@ -143,7 +144,8 @@ main {
     outline: none;
   }
 
-  button.delete:hover, button.delete:focus {
+  button.delete:hover,
+  button.delete:focus {
     background: #e74c3c;
     color: white;
   }
@@ -153,7 +155,7 @@ main {
   }
 }
 
-#form .group-repeater .instance:hover > .controls button {
+.form .group-repeater .instance:hover > .controls button {
   color: gray;
 
   &:hover {
@@ -161,14 +163,48 @@ main {
   }
 }
 
-#form .group-repeater .inputs {
+.form .group-repeater .inputs {
   padding: 1rem;
   flex-basis: 100%;
   border-left: 1px solid #dedede;
+
+  .group + .group {
+    margin-top: 1rem;
+  }
 }
 
-#form label {
-  margin-bottom: .5rem;
+.form .choices {
+  border: 1px solid #dedede;
+}
+
+.form .choice {
+  display: flex;
+}
+
+.form .choice + .choice {
+  border-top: 1px solid #dedede;
+}
+
+.form .choice-inputs {
+  padding: 1rem;
+  flex-basis: 100%;
+}
+
+.form .choice-selector {
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  background: #e8e8e8;
+  cursor: pointer;
+
+  input[type='radio'] {
+    display: block;
+    margin: 1rem auto;
+  }
+}
+
+.form label {
+  margin-bottom: 0.5rem;
   display: block;
   text-transform: uppercase;
   color: #888;
@@ -176,11 +212,17 @@ main {
   font-size: 1rem;
 }
 
-#form select, input, textarea {
+.disabled label {
+  opacity: 0.5;
+}
+
+.form select,
+.form input[type='text'],
+.form textarea {
   width: 100%;
   box-sizing: border-box;
   margin: 0;
-  padding: .5rem;
+  padding: 0.5rem;
   display: block;
   border: 2px solid #dedede;
   border-radius: 3px;
@@ -192,8 +234,12 @@ main {
     outline: none;
     border-color: #bbb;
   }
+
+  &:disabled {
+    opacity: 0.5;
+  }
 }
 
-#form textarea {
+.form textarea {
   resize: vertical;
 }
