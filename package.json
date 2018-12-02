@@ -2,7 +2,7 @@
   "scripts": {
     "build": "tsc --outDir dist",
     "fmt": "prettier --write src/*.ts src/*.js src/**/*.{ts,tsx}",
-    "grammar": "pegjs -o src/grammar/index.js --format umd src/grammar/grammar.pegjs",
+    "grammar": "pegjs -o src/analysis/grammar/index.js --format umd src/analysis/grammar/grammar.pegjs",
     "start": "parcel --no-hmr index.html"
   },
   "devDependencies": {

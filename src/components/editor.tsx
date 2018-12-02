@@ -9,19 +9,15 @@ require('codemirror/mode/xml/xml')
 
 // App libraries.
 import * as grammar from '../grammar'
-import { TypeError, scope } from '../semantics'
+import { error, scope } from '../analysis'
 
 interface Props {
   initialTemplate: string
-  onChange: (
-    template: string,
-    model: scope.Root | grammar.SyntaxError | TypeError
-  ) => void
+  onChange: (template: string) => void
 }
 
 interface State {
   template: string
-  model: scope.Root | grammar.SyntaxError | TypeError
 }
 
 export default class Editor extends React.Component<Props, State> {
@@ -31,7 +27,6 @@ export default class Editor extends React.Component<Props, State> {
     // Initialize state.
     this.state = {
       template: this.props.initialTemplate,
-      model: buildModel(this.props.initialTemplate),
     }
 
     // Bind component modules.
@@ -39,14 +34,8 @@ export default class Editor extends React.Component<Props, State> {
   }
 
   private onBeforeChange(_editor: any, _diff: any, template: string) {
-    // Try to generate a valid model from the template.
-    const model = buildModel(template)
-
-    // Update the state with the new template and model.
-    this.setState({ template, model })
-
-    // Dispatch `onChange` callback.
-    this.props.onChange(template, model)
+    this.setState({ template })
+    this.props.onChange(template)
   }
 
   public render() {
@@ -77,21 +66,5 @@ export default class Editor extends React.Component<Props, State> {
         }}
       />
     )
-  }
-}
-
-const buildModel = (
-  template: string
-): scope.Root | grammar.SyntaxError | TypeError => {
-  try {
-    const stmts = grammar.parse(template)
-    const model = scope.infer(stmts)
-    return model
-  } catch (err) {
-    if (err instanceof grammar.SyntaxError || err instanceof TypeError) {
-      return err
-    } else {
-      throw err
-    }
   }
 }

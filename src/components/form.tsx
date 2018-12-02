@@ -2,8 +2,7 @@
 import * as React from 'react'
 
 // App libraries.
-import { types } from '../semantics'
-import * as paths from '../paths'
+import { types, paths } from '../analysis'
 
 // Components.
 import Any from './inputs/any'

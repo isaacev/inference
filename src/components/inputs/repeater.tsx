@@ -4,15 +4,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/pro-regular-svg-icons'
 
 // App libraries.
-import { Path, Index } from '../../paths'
-import { types } from '../../semantics'
+import { types, paths } from '../../analysis'
 
 // App components.
 import Any from './any'
 import Wrapper from './wrapper'
 
 interface Props {
-  path: Path
+  path: paths.Path
   type: types.List
   readonly?: boolean
 }
@@ -31,7 +30,7 @@ export default class Repeater extends React.Component<Props, State> {
 
   public render() {
     if (this.state.count <= 0) {
-      const path = this.props.path.concat(new Index(0))
+      const path = this.props.path.concat(new paths.Index(0))
       const type = this.props.type.element
       return (
         <Wrapper path={this.props.path} readonly={this.props.readonly}>
@@ -51,7 +50,7 @@ export default class Repeater extends React.Component<Props, State> {
       <Wrapper path={this.props.path} readonly={this.props.readonly}>
         <div className="group group-repeater">
           {repeat(this.state.count, i => {
-            const path = this.props.path.concat(new Index(i))
+            const path = this.props.path.concat(new paths.Index(i))
             const type = this.props.type.element
             return (
               <div className="instance" key={i}>

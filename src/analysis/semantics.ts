@@ -1,9 +1,6 @@
-import * as paths from './paths'
-import * as tmpl from './grammar'
-
-export class TypeError {
-  constructor(public message: string) {}
-}
+import { paths } from './paths'
+import { error } from './error'
+import * as tmpl from './parse'
 
 export namespace types {
   export type Nilable = Type | Nil
@@ -289,7 +286,7 @@ export namespace types {
       } else if (ctx instanceof Dict) {
         return followPath(path.rest(), ctx.getValue(first.name))
       } else {
-        throw new TypeError(
+        throw new error.TemplateTypeError(
           `no field "${first.name}" on type ${ctx.toString()}`
         )
       }
@@ -299,7 +296,7 @@ export namespace types {
       } else if (ctx instanceof List) {
         return followPath(path.rest(), ctx.element)
       } else {
-        throw new TypeError(`no index on type ${ctx.toString()}`)
+        throw new error.TemplateTypeError(`no index on type ${ctx.toString()}`)
       }
     } else if (first instanceof paths.Branch) {
       if (ctx instanceof Unknown) {
@@ -310,10 +307,12 @@ export namespace types {
           ctx.branches[first.branch] || new Unknown()
         )
       } else {
-        throw new TypeError(`no branches on type ${ctx.toString()}`)
+        throw new error.TemplateTypeError(
+          `no branches on type ${ctx.toString()}`
+        )
       }
     } else {
-      throw new TypeError(`unknown path segment`)
+      throw new error.TemplateTypeError(`unknown path segment`)
     }
   }
 
@@ -337,7 +336,7 @@ export namespace types {
     } else if (t2.accepts(t1)) {
       return t2
     } else {
-      throw new TypeError(`cannot unify ${t1} and ${t2}`)
+      throw new error.TemplateTypeError(`cannot unify ${t1} and ${t2}`)
     }
   }
 
@@ -359,7 +358,7 @@ export namespace types {
     } else if (t2.accepts(t1)) {
       return t1
     } else {
-      throw new TypeError(`cannot intersect ${t1} and ${t2}`)
+      throw new error.TemplateTypeError(`cannot intersect ${t1} and ${t2}`)
     }
   }
 
@@ -387,7 +386,9 @@ export namespace types {
             ])
           )
         } else {
-          throw new TypeError(`no field "${first.name}" on type ${ctx}`)
+          throw new error.TemplateTypeError(
+            `no field "${first.name}" on type ${ctx}`
+          )
         }
       } else if (first instanceof paths.Index) {
         if (ctx instanceof Unknown) {
@@ -395,7 +396,7 @@ export namespace types {
         } else if (ctx instanceof List) {
           return combine(ctx, new List(rec(path.rest(), ctx.element, cons)))
         } else {
-          throw new TypeError(`no index on type ${ctx}`)
+          throw new error.TemplateTypeError(`no index on type ${ctx}`)
         }
       } else if (first instanceof paths.Branch) {
         if (ctx instanceof Unknown) {
@@ -414,10 +415,10 @@ export namespace types {
             return new Or(branches)
           }
         } else {
-          throw new TypeError(`no branches on type ${ctx}`)
+          throw new error.TemplateTypeError(`no branches on type ${ctx}`)
         }
       } else {
-        throw new TypeError(`unknown path segment`)
+        throw new error.TemplateTypeError(`unknown path segment`)
       }
     }
     return rec
@@ -552,7 +553,7 @@ export namespace scope {
     }
   }
 
-  export const infer = (stmts: tmpl.Statements): Root => {
+  export const infer = (stmts: tmpl.Statement[]): Root => {
     const scope = new Root(new types.Unknown())
     stmts.forEach(stmt => inferStmt(scope, stmt))
     return scope
@@ -563,35 +564,41 @@ export namespace scope {
       case 'inline':
         inferInline(scope, stmt)
         break
-      case 'with':
-        inferWith(scope, stmt)
-        break
-      case 'loop':
-        inferLoop(scope, stmt)
-        break
-      case 'match':
-        inferMatch(scope, stmt)
+      case 'block':
+        switch (stmt.name) {
+          case 'with':
+            inferWith(scope, stmt as tmpl.WithBlock)
+            break
+          case 'loop':
+            inferLoop(scope, stmt as tmpl.LoopBlock)
+            break
+          case 'match':
+            inferMatch(scope, stmt as tmpl.MatchBlock)
+            break
+        }
         break
     }
   }
 
   const inferInline = (scope: Scope, stmt: tmpl.Inline) => {
-    scope.constrain(paths.Path.fromFields(stmt.field.segments), new types.Str())
+    scope.constrain(paths.Path.fromFields(stmt.field), new types.Str())
   }
 
   const inferWith = (scope: Scope, stmt: tmpl.WithBlock) => {
-    const subscope = new With(scope, paths.Path.fromFields(stmt.field.segments))
+    const subscope = new With(scope, paths.Path.fromFields(stmt.field))
     stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
   }
 
   const inferLoop = (scope: Scope, stmt: tmpl.LoopBlock) => {
-    const path = paths.Path.fromFields(stmt.field.segments)
+    const path = paths.Path.fromFields(stmt.field)
     const subscope = new Loop(scope, path, scope.lookup(path))
     stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
+
+    // TODO: handle optional {{:empty}} clause
   }
 
   const inferMatch = (scope: Scope, stmt: tmpl.MatchBlock) => {
-    const basePath = paths.Path.fromFields(stmt.field.segments)
+    const basePath = paths.Path.fromFields(stmt.field)
 
     // Analyze initial case.
     const branchPath = basePath.concat(new paths.Branch(0))
@@ -599,7 +606,7 @@ export namespace scope {
     stmt.stmts.forEach(stmt => inferStmt(subscope, stmt))
 
     // Analyze additional cases.
-    stmt.clauses.forEach((stmts, index) => {
+    stmt.orClauses.forEach((stmts, index) => {
       const branchPath = basePath.concat(new paths.Branch(index + 1))
       const subscope = new Branch(scope, branchPath, scope.lookup(branchPath))
       stmts.forEach(stmt => inferStmt(subscope, stmt))

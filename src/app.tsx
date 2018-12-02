@@ -4,13 +4,14 @@ import * as ReactDOM from 'react-dom'
 import * as localforage from 'localforage'
 
 // App libraries.
-import { SyntaxError, parse } from './grammar'
-import { TypeError, scope } from './semantics'
+import { parse, scope, error } from './analysis'
 
 // App components.
 import Editor from './components/editor'
 import ErrorReport from './components/error-report'
 import Form from './components/form'
+
+type ScopeOrErrors = scope.Root | error.TemplateError[]
 
 interface Props {
   template: string
@@ -19,7 +20,7 @@ interface Props {
 
 interface State {
   template: string
-  analysis: scope.Root | SyntaxError | TypeError
+  analysis: ScopeOrErrors
 }
 
 class App extends React.Component<Props, State> {
@@ -34,11 +35,8 @@ class App extends React.Component<Props, State> {
     this.handleChange = this.handleChange.bind(this)
   }
 
-  private handleChange(
-    template: string,
-    analysis: scope.Root | SyntaxError | TypeError
-  ) {
-    this.setState({ template, analysis })
+  private handleChange(template: string) {
+    this.setState({ template, analysis: toAnalysis(template) })
     this.props.onChange(template)
   }
 
@@ -57,7 +55,7 @@ class App extends React.Component<Props, State> {
           ) : (
             <ErrorReport
               template={this.state.template}
-              error={this.state.analysis}
+              errors={this.state.analysis}
             />
           )}
         </div>
@@ -66,13 +64,18 @@ class App extends React.Component<Props, State> {
   }
 }
 
-const toAnalysis = (template: string): scope.Root | SyntaxError | TypeError => {
+const toAnalysis = (template: string): ScopeOrErrors => {
   try {
-    const stmts = parse(template)
-    return scope.infer(stmts)
+    const [errs, stmts] = parse(template)
+    if (errs.length > 0) {
+      return errs
+    } else {
+      return scope.infer(stmts)
+    }
   } catch (err) {
-    if (err instanceof SyntaxError || err instanceof TypeError) {
-      return err
+    console.log(error)
+    if (err instanceof error.TemplateError) {
+      return [err]
     } else {
       throw err
     }

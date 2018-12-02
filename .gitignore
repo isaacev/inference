@@ -2,7 +2,7 @@
 node_modules
 .cache
 dist
-src/grammar/index.js
 
 # Files
 .DS_Store
+src/analysis/grammar/index.js
