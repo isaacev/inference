@@ -6,11 +6,13 @@ export type Statement = Text | Inline | Block
 export interface Text {
   type: 'text'
   text: string
+  where: grammar.Location
 }
 
 export interface Inline {
   type: 'inline'
   field: Field
+  where: grammar.Location
 }
 
 export interface Block {
@@ -18,6 +20,7 @@ export interface Block {
   name: string
   field: Field
   stmts: Statement[]
+  where: grammar.Location
 }
 
 export type Field = string[]
@@ -64,6 +67,7 @@ const normWith = (block: grammar.Block): WithBlock => {
     name: 'with',
     field: normField(block.field),
     stmts: normStmts(block.stmts),
+    where: block.pos,
   }
 }
 
@@ -75,6 +79,7 @@ const normLoop = (block: grammar.Block): LoopBlock => {
     stmts: normStmts(block.stmts),
     emptyClause:
       block.clauses.length > 0 ? normStmts(block.clauses[0].stmts) : [],
+    where: block.pos,
   }
 }
 
@@ -85,6 +90,7 @@ const normMatch = (block: grammar.Block): MatchBlock => {
     field: normField(block.field),
     stmts: normStmts(block.stmts),
     orClauses: block.clauses.map(c => normStmts(c.stmts)),
+    where: block.pos,
   }
 }
 
@@ -194,9 +200,13 @@ const normStmts = (stmts: grammar.Statement[]) => {
 const normStmt = (stmt: grammar.Statement) => {
   switch (stmt.type) {
     case 'text':
-      return { type: 'text', text: stmt.text } as Text
+      return { type: 'text', text: stmt.text, where: stmt.pos } as Text
     case 'inline':
-      return { type: 'inline', field: normField(stmt.field) } as Inline
+      return {
+        type: 'inline',
+        field: normField(stmt.field),
+        where: stmt.pos,
+      } as Inline
     case 'block':
       return normBlock(stmt)
   }
@@ -212,6 +222,7 @@ const normBlock = (block: grammar.Block): Block => {
       name: 'unknown',
       field: normField(block.field),
       stmts: normStmts(block.stmts),
+      where: block.pos,
     }
   }
 }

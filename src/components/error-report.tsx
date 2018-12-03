@@ -37,7 +37,7 @@ class ErrorMessage extends React.PureComponent<ErrorMessageProps> {
       <div id="error-message">
         <h2 className="headline">Syntax error</h2>
         <h3>{this.props.error.message}</h3>
-        {this.props.error instanceof error.TemplateSyntaxError && (
+        {this.props.error instanceof error.TemplateError && (
           <pre className="snippet">
             {toSnippet(this.props.template, this.props.error.loc)}
           </pre>

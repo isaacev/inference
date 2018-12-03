@@ -59,14 +59,12 @@ export namespace error {
   }
 
   export class TemplateTypeError extends TemplateError {
-    constructor(msg: string) {
-      super(
-        {
-          start: { line: 0, column: 0, offset: 0 },
-          end: { line: 0, column: 0, offset: 0 },
-        },
-        msg
-      )
+    constructor(loc: grammar.Location, err: TypeError) {
+      super(loc, err.message)
     }
+  }
+
+  export class TypeError {
+    constructor(public message: string) {}
   }
 }
