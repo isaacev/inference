@@ -81,7 +81,10 @@ const toAnalysis = (template: string): ScopeOrErrors => {
   }
 }
 
-const initialLoad = (template: string) => {
+const initialLoad = (template: string | null) => {
+  if (template === null) {
+    template = ''
+  }
   const app = <App template={template} onChange={updateStorage} />
   const elem = document.querySelector('#main')
   ReactDOM.render(app, elem)
