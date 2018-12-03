@@ -1,7 +1,7 @@
 // 3rd party libraries.
 import * as React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes } from '@fortawesome/pro-regular-svg-icons'
+import { faTimes } from '@fortawesome/pro-regular-svg-icons/faTimes'
 
 // App libraries.
 import { types, paths } from '../../analysis'
