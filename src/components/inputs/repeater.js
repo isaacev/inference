@@ -27,41 +27,40 @@ var Repeater = /** @class */ (function (_super) {
     function Repeater(props) {
         var _this = _super.call(this, props) || this;
         _this.state = {
-            count: 1
+            count: 0
         };
         return _this;
     }
-    Repeater.prototype.handleAdd = function () {
-        this.setState({ count: this.state.count + 1 });
-    };
-    Repeater.prototype.handleDelete = function () {
-        this.setState({ count: this.state.count - 1 });
-    };
     Repeater.prototype.render = function () {
         var _this = this;
-        return (React.createElement(React.Fragment, null,
-            React.createElement(wrapper_1["default"], { path: this.props.path, readonly: this.props.readonly },
-                React.createElement("div", { className: "group group-repeater" }, repeat(this.state.count, function (i) {
-                    var path = _this.props.path.concat(new analysis_1.paths.Index(i));
-                    var type = _this.props.type.element;
-                    return (React.createElement("div", { className: "instance", key: i },
-                        React.createElement(InstanceControls, null,
-                            React.createElement(InstanceControl, { name: "delete", icon: pro_regular_svg_icons_1.faTimes, onClick: _this.handleDelete.bind(_this) }),
-                            React.createElement(InstanceControl, { name: "move", icon: pro_regular_svg_icons_1.faBars })),
+        if (this.state.count <= 0) {
+            var path = this.props.path.concat(new analysis_1.paths.Index(0));
+            var type = this.props.type.element;
+            return (React.createElement(wrapper_1["default"], { path: this.props.path, readonly: this.props.readonly },
+                React.createElement("div", { className: "group group-repeater" },
+                    React.createElement("div", { className: "instance" },
+                        React.createElement(InstanceControls, null),
                         React.createElement("div", { className: "inputs" },
-                            React.createElement(any_1["default"], { path: path, type: type }))));
-                }))),
-            React.createElement(InstanceControl, { name: "add", icon: pro_regular_svg_icons_1.faPlus, onClick: this.handleAdd.bind(this) })));
+                            React.createElement(any_1["default"], { path: path, type: type, readonly: this.props.readonly }))))));
+        }
+        return (React.createElement(wrapper_1["default"], { path: this.props.path, readonly: this.props.readonly },
+            React.createElement("div", { className: "group group-repeater" }, repeat(this.state.count, function (i) {
+                var path = _this.props.path.concat(new analysis_1.paths.Index(i));
+                var type = _this.props.type.element;
+                return (React.createElement("div", { className: "instance", key: i },
+                    React.createElement(InstanceControls, null),
+                    React.createElement("div", { className: "inputs" },
+                        React.createElement(any_1["default"], { path: path, type: type }))));
+            }))));
     };
     return Repeater;
 }(React.Component));
 exports["default"] = Repeater;
-function InstanceControls(props) {
-    return React.createElement("div", { className: "controls" }, props.children);
+function InstanceControls() {
+    return (React.createElement("div", { className: "controls" },
+        React.createElement("button", { className: "delete" },
+            React.createElement(react_fontawesome_1.FontAwesomeIcon, { icon: pro_regular_svg_icons_1.faTimes }))));
 }
-var InstanceControl = function (props) { return (React.createElement("button", { className: "instance-control " + props.name, type: "button", onClick: props.onClick },
-    React.createElement("div", { className: "fill" },
-        React.createElement(react_fontawesome_1.FontAwesomeIcon, { icon: props.icon })))); };
 function repeat(num, fn) {
     var acc = [];
     for (var i = 0; i < num; i++) {
