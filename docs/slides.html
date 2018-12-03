@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: "Roboto";
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Roboto Condensed";
+        font-weight: normal;
+      }
+
+      .remark-slide-content h3 {
+        font-size: 30px;
+      }
+
+      .remark-code,
+      .remark-inline-code {
+        font-family: "Dank Mono", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: left, middle
+
+# Template structure inference
+
+Can we build a form using only a Mustacle-like HTML template?
+
+---
+
+# Existing template libraires
+
+- Popular libraries include Mustache, Handlebars, and Dust
+- Minimal syntax, use `{{` and `}}` to identify template commands
+- But type enforcement is too weak to make inference useful
+  - These libraries often use JavaScript's falsy logic
+
+In this Handlebars example:
+```handlebars
+{{#if things}}
+  {{ things }}
+{{/if}}
+```
+
+Setting the **`things`** variable to any of these values skips the `if` body
+- empty string
+- empty array
+- `false`
+- `null`
+
+This makes it hard to determine what the type of **`things`** should be
+
+---
+
+# New template syntax
+
+- Chunks of plaintext with tags wrapped in double-braces
+- Blocks open with hash-symbol, closed with forward slash
+- Variable references begin with dot, can be chained together
+- Stronger type system to make infering types easier
+
+An example template:
+```handlebars
+<p>hello, {{.name}}</p>
+<ul>
+{{#loop .friends}}
+  <li>friends with {{.name}}</li>
+{{/loop}}
+</ul>
+```
+
+Which can output the HTML:
+
+```html
+<p>hello, Alice</p>
+<ul>
+  <li>friends with Bob</li>
+  <li>friends with Carol</li>
+</ul>
+```
+
+---
+
+# Type inference: Strings
+
+- All printed variables are inferred as having the **`String`** type
+
+For example:
+```handlebars
+hello {{.firstName}} {{.lastName}}
+```
+
+Infers the following document structure:
+```typescript
+{
+  "firstName": string
+  "lastName": string
+}
+```
+
+---
+
+# Type inference: Lists
+
+- The built-in `{{#loop}}` block infers that its reference is a list
+- Initially, the list member type is unknown but as the block body is evaluated, that type is refined
+
+For example:
+```handlebars
+{{#loop .things}}
+  <p><strong>{{.name}}</strong> {{.desc}}</p>
+{{/loop}}
+```
+
+Infers the following document structure:
+```typescript
+{
+  "things": [
+    {
+      name: string
+      desc: string
+    }
+  ]
+}
+```
+
+---
+
+# Type inference: Lists (cont)
+
+- References do not have to always refer to a named member
+- A single dot is used to reference the current scope and any inferences will be applied to the current scope
+
+For example:
+```handlebars
+<ul>
+{{#loop .}}
+  <li>{{.}}</li>
+{{/loop}}
+</ul>
+```
+
+Infers the following structure:
+```typescript
+[string]
+```
+
+---
+
+# Limitations so far
+
+- By using only String and List types, the final document is limited in how adaptable it can be
+- There still needs to be a way to express that a document could have one of a few different structures
+
+---
+
+# Type inference: Match
+
+- The `{{#match}}` block allows different structures to be described in parallel
+- This enables the inference of the `Or` type
+- Each `{{#match}}` block can have 0 or more `{{:or}}` clauses
+
+For example:
+```handlebars
+{{#match .thing}}
+  {{.}}
+{{:or}}
+  {{#loop .thing}}
+    {{.name}}
+  {{/loop}}
+{{/match}}
+```
+
+Infers the following structure:
+```typescript
+{
+  "thing": string | [{ "name": string }]
+}
+```
+
+---
+
+# Type inference: Match (cont)
+
+```handlebars
+<h1>{{.title}}</h1>
+
+{{#match .article}}
+  <article>{{.text}}</article>
+
+{{:or}}
+  <h2>Links:</h2>
+  <ul>
+  {{#loop .links}}
+    <a src="{{.href}}">{{.text}}</a>
+  {{/loop}}
+  </ul>
+
+{{:or}}
+  <h2>Gallery:</h2>
+  <ul>
+  {{#loop .images}}
+    <img src="{{.src}}" alt="{{.alt}}" />
+  {{/loop}}
+  </ul>
+
+{{/match}}
+```
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
