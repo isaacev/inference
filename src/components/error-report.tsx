@@ -1,6 +1,5 @@
 // 3rd party libraries.
 import * as React from 'react'
-import classnames from 'classnames'
 
 // App libraries.
 import { error, Location } from '../analysis'
@@ -72,7 +71,7 @@ const MarkedLine = (props: {
   end: number
 }) => (
   <span className="line">
-    <span className="gutter is-error">
+    <span className="gutter">
       {props.num.toString().padStart(props.gutterWidth)}
       {' | '}
     </span>

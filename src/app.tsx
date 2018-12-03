@@ -73,7 +73,6 @@ const toAnalysis = (template: string): ScopeOrErrors => {
       return scope.infer(stmts)
     }
   } catch (err) {
-    console.log(error)
     if (err instanceof error.TemplateError) {
       return [err]
     } else {

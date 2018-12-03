@@ -7,10 +7,6 @@ import { EditorConfiguration, Pass } from 'codemirror'
 require('../mode')
 require('codemirror/mode/xml/xml')
 
-// App libraries.
-import * as grammar from '../grammar'
-import { error, scope } from '../analysis'
-
 interface Props {
   initialTemplate: string
   onChange: (template: string) => void
