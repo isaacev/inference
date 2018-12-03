@@ -1,10 +1,11 @@
 {
   "scripts": {
     "clean": "rimraf .cache dist",
-    "build": "parcel build --out-file index.html --public-url ./ index.html",
+    "build": "npm run grammar && parcel build --out-file index.html --public-url ./ index.html",
+    "slides": "cp docs/slides.html dist",
     "fmt": "prettier --write src/*.ts src/*.js src/**/*.{ts,tsx}",
     "grammar": "pegjs -o src/analysis/grammar/index.js --format umd src/analysis/grammar/grammar.pegjs",
-    "deploy": "npm run clean && npm run build && gh-pages -d dist",
+    "deploy": "npm run clean && npm run build && npm run slides && gh-pages -d dist",
     "start": "parcel --no-hmr index.html"
   },
   "devDependencies": {
