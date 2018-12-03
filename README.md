@@ -1,1 +1,1 @@
-# Venture CMS
+# Template structure inference

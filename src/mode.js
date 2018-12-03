@@ -18,9 +18,9 @@
     mod(CodeMirror)
   }
 })(function(CodeMirror) {
-  CodeMirror.defineSimpleMode('venture-meta', {
-    start: [{ regex: /\{\{/, push: 'venture', token: 'tag' }],
-    venture: [
+  CodeMirror.defineSimpleMode('template-meta', {
+    start: [{ regex: /\{\{/, push: 'template', token: 'tag' }],
+    template: [
       { regex: /\}\}/, pop: true, token: 'tag' },
 
       // Block keywords.
@@ -37,8 +37,8 @@
     ],
   })
 
-  CodeMirror.defineMode('venture', (config, parserConfig) => {
-    const meta = CodeMirror.getMode(config, 'venture-meta')
+  CodeMirror.defineMode('template', (config, parserConfig) => {
+    const meta = CodeMirror.getMode(config, 'template-meta')
     if (!parserConfig || !parserConfig.base) {
       return meta
     } else {

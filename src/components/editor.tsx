@@ -42,7 +42,7 @@ export default class Editor extends React.Component<Props, State> {
         options={{
           // Color, syntax highlighting, and layout options.
           lineNumbers: true,
-          mode: 'venture',
+          mode: 'template',
           theme: 'blackboard',
 
           // Indentation and tab handling options.
