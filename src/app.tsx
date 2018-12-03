@@ -5,6 +5,7 @@ import * as localforage from 'localforage'
 
 // App libraries.
 import { parse, scope, error } from './analysis'
+import { DEFAULT_TEMPLATE } from './default'
 
 // App components.
 import Editor from './components/editor'
@@ -83,7 +84,7 @@ const toAnalysis = (template: string): ScopeOrErrors => {
 
 const initialLoad = (template: string | null) => {
   if (template === null) {
-    template = ''
+    template = DEFAULT_TEMPLATE
   }
   const app = <App template={template} onChange={updateStorage} />
   const elem = document.querySelector('#main')
