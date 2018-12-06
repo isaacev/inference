@@ -6,7 +6,7 @@
     "fmt": "prettier --write src/*.ts src/*.js src/**/*.{ts,tsx}",
     "grammar": "pegjs -o src/analysis/grammar/index.js --format umd src/analysis/grammar/grammar.pegjs",
     "deploy": "npm run clean && npm run build && npm run slides && gh-pages -d dist",
-    "start": "parcel --no-hmr index.html"
+    "start": "parcel --no-hmr --no-cache index.html"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-pro": "^5.4.1",
