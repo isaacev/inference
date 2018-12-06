@@ -46,7 +46,7 @@ export namespace paths {
       if (this.hasIndex()) {
         return `[${this.index}]`
       } else {
-        return '[]'
+        return '[*]'
       }
     }
 
@@ -102,7 +102,15 @@ export namespace paths {
       if (fields.length === 0) {
         return new Path()
       } else {
-        return new Path(fields.map(f => new Field(f.replace(/^\./, ''))))
+        return new Path(
+          fields.map(f => {
+            if (/^\.\d+$/.test(f)) {
+              return new Index(parseInt(f.slice(1), 10))
+            } else {
+              return new Field(f.replace(/^\./, ''))
+            }
+          })
+        )
       }
     }
 

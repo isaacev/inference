@@ -25,10 +25,13 @@ Field
   / RootField
 
 ChildField
-  = segments:("." Name)+ { return segments.map(s => `.${s[1].text}`) }
+  = segments:("." (Name / Index))+ { return segments.map(s => `.${s[1].text}`) }
 
 RootField
   = "." { return [] }
+
+Index "index"
+  = text:$([0-9]+) { return { text, pos: location() } }
 
 Name "name"
   = text:$([a-zA-Z]+) { return { text, pos: location() } }
