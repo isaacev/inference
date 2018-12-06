@@ -114,7 +114,7 @@ export namespace paths {
       }
     }
 
-    constructor(private segments: Segment[] = []) {}
+    constructor(public segments: Segment[] = []) {}
 
     public length(): number {
       return this.segments.length
