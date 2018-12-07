@@ -153,7 +153,7 @@ const areDictPairs = (pairs: SegmentPair[]): pairs is FieldPair[] => {
 
 const minimumLength = (pairs: IndexPair[]): number => {
   return pairs
-    .map(pair => (pair.seg.index ? pair.seg.index + 1 : 0))
+    .map(pair => (pair.seg.index !== undefined ? pair.seg.index + 1 : 0))
     .reduce((max, index) => Math.max(max, index))
 }
 
