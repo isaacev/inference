@@ -4,15 +4,17 @@ import * as ReactDOM from 'react-dom'
 import * as localforage from 'localforage'
 
 // App libraries.
-import { parse, scope, error } from './analysis'
+import { parse } from './analysis/syntax/normalize'
+import { solve } from './analysis/solver/solve'
+import { Type } from './analysis/types/types'
 import { DEFAULT_TEMPLATE } from './default'
 
 // App components.
 import Editor from './components/editor'
-import ErrorReport from './components/error-report'
-import Form from './components/form'
-
-type ScopeOrErrors = scope.Root | error.TemplateError[]
+import {
+  TemplateError,
+  TemplateErrorCollection,
+} from './analysis/syntax/errors'
 
 interface Props {
   template: string
@@ -21,7 +23,6 @@ interface Props {
 
 interface State {
   template: string
-  analysis: ScopeOrErrors
 }
 
 class App extends React.Component<Props, State> {
@@ -29,16 +30,19 @@ class App extends React.Component<Props, State> {
     super(props)
     this.state = {
       template: this.props.template,
-      analysis: toAnalysis(this.props.template),
     }
 
     // Bind methods to this context.
     this.handleChange = this.handleChange.bind(this)
+    console.log(getSolution(this.props.template))
   }
 
   private handleChange(template: string) {
-    this.setState({ template, analysis: toAnalysis(template) })
     this.props.onChange(template)
+    this.setState({
+      template,
+    })
+    console.log(getSolution(template))
   }
 
   public render() {
@@ -50,32 +54,20 @@ class App extends React.Component<Props, State> {
             onChange={this.handleChange}
           />
         </div>
-        <div id="right">
-          {this.state.analysis instanceof scope.Root ? (
-            <Form type={this.state.analysis.context} />
-          ) : (
-            <ErrorReport
-              template={this.state.template}
-              errors={this.state.analysis}
-            />
-          )}
-        </div>
+        <div id="right" />
       </>
     )
   }
 }
 
-const toAnalysis = (template: string): ScopeOrErrors => {
+const getSolution = (tmpl: string): Type | TemplateErrorCollection => {
   try {
-    const [errs, stmts] = parse(template)
-    if (errs.length > 0) {
-      return errs
-    } else {
-      return scope.infer(stmts)
-    }
+    return solve(parse(tmpl))
   } catch (err) {
-    if (err instanceof error.TemplateError) {
-      return [err]
+    if (err instanceof TemplateErrorCollection) {
+      return err
+    } else if (err instanceof TemplateError) {
+      return new TemplateErrorCollection([err])
     } else {
       throw err
     }
