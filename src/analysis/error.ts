@@ -64,6 +64,16 @@ export namespace error {
     }
   }
 
+  export class HelpfulTemplateTypeError extends TemplateTypeError {
+    constructor(
+      origin: grammar.Location,
+      err: TypeError,
+      public help: grammar.Location
+    ) {
+      super(origin, err)
+    }
+  }
+
   export class TypeError {
     constructor(public message: string) {}
   }
