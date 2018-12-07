@@ -45,7 +45,22 @@ main {
   flex-grow: 1;
   justify-content: center;
   background: #f2f2f2;
+  padding: 1rem;
   overflow-y: scroll;
+}
+
+#right table {
+  table-layout: fixed;
+
+  th,
+  td {
+    padding: 0.5rem;
+    border: 1px solid black;
+  }
+
+  td {
+    font-family: monospace;
+  }
 }
 
 #error-message {
