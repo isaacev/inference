@@ -2,14 +2,15 @@
 import * as React from 'react'
 
 // App libraries.
-import { types, paths } from '../../analysis'
+import { Type } from '../../analysis/types/types'
+import { Path } from '../../analysis/types/paths'
 
 // App components.
 import Wrapper from './wrapper'
 
 interface Props {
-  path: paths.Path
-  type: types.Type
+  path: Path
+  type: Type
   readonly?: boolean
 }
 

@@ -2,11 +2,12 @@
 import * as React from 'react'
 
 // App libraries.
-import { error, Location } from '../analysis'
+import { TemplateError } from '../analysis/syntax/errors'
+import { Location } from '../analysis/syntax/tree'
 
 interface Props {
   template: string
-  errors: error.TemplateError[]
+  errors: TemplateError[]
 }
 
 export default class ErrorReport extends React.PureComponent<Props> {
@@ -27,7 +28,7 @@ export default class ErrorReport extends React.PureComponent<Props> {
 
 interface ErrorMessageProps {
   template: string
-  error: error.TemplateError
+  error: TemplateError
 }
 
 class ErrorMessage extends React.PureComponent<ErrorMessageProps> {
@@ -36,9 +37,9 @@ class ErrorMessage extends React.PureComponent<ErrorMessageProps> {
       <div id="error-message">
         <h2 className="headline">Syntax error</h2>
         <h3>{this.props.error.message}</h3>
-        {this.props.error instanceof error.TemplateError && (
+        {this.props.error instanceof TemplateError && (
           <pre className="snippet">
-            {toSnippet(this.props.template, this.props.error.loc)}
+            {toSnippet(this.props.template, this.props.error.origin)}
           </pre>
         )}
       </div>

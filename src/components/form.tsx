@@ -2,20 +2,21 @@
 import * as React from 'react'
 
 // App libraries.
-import { types, paths } from '../analysis'
+import { Type } from '../analysis/types/types'
+import { Path } from '../analysis/types/paths'
 
 // Components.
 import Any from './inputs/any'
 
 interface Props {
-  type: types.Type
+  type: Type
 }
 
 export default class Form extends React.Component<Props> {
   public render() {
     return (
       <form className="form">
-        <Any path={new paths.Path()} type={this.props.type} />
+        <Any path={new Path()} type={this.props.type} />
       </form>
     )
   }

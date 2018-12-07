@@ -3,10 +3,10 @@ import * as React from 'react'
 import classnames from 'classnames'
 
 // App libraries.
-import { paths } from '../../analysis'
+import { Path } from '../../analysis/types/paths'
 
 interface Props {
-  path: paths.Path
+  path: Path
   readonly?: boolean
   children: React.ReactNode
 }

@@ -1,7 +1,7 @@
 // 3rd party libraries.
 import * as React from 'react'
 import { Controlled as CodeMirror } from 'react-codemirror2'
-import { EditorConfiguration, Pass } from 'codemirror'
+import { Pass } from 'codemirror'
 
 // CodeMirror modes.
 require('../mode')

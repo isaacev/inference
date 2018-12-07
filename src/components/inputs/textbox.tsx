@@ -2,20 +2,21 @@
 import * as React from 'react'
 
 // App libraries.
-import { types, paths } from '../../analysis'
+import { Type, StrValue } from '../../analysis/types/types'
+import { Path } from '../../analysis/types/paths'
 
 // App components.
 import Wrapper from './wrapper'
 
 interface Props {
-  path: paths.Path
-  type: types.Type
+  path: Path
+  type: Type
   readonly?: boolean
 }
 
 export default class Textbox extends React.Component<Props> {
   public render() {
-    if (this.props.type instanceof types.StrValue) {
+    if (this.props.type instanceof StrValue) {
       return (
         <Wrapper path={this.props.path} readonly={this.props.readonly}>
           <input

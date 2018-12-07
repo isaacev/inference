@@ -2,15 +2,16 @@
 import * as React from 'react'
 
 // App libraries.
-import { types, paths } from '../../analysis'
+import { Or } from '../../analysis/types/types'
+import { Path } from '../../analysis/types/paths'
 
 // App components.
 import Any from './any'
 import Wrapper from './wrapper'
 
 interface Props {
-  path: paths.Path
-  type: types.Or
+  path: Path
+  type: Or
   readonly?: boolean
 }
 

@@ -8,13 +8,15 @@ import { parse } from './analysis/syntax/normalize'
 import { solve } from './analysis/solver/solve'
 import { Type } from './analysis/types/types'
 import { DEFAULT_TEMPLATE } from './default'
-
-// App components.
-import Editor from './components/editor'
 import {
   TemplateError,
   TemplateErrorCollection,
 } from './analysis/syntax/errors'
+import ErrorReport from './components/error-report'
+
+// App components.
+import Editor from './components/editor'
+import Form from './components/form'
 
 interface Props {
   template: string
@@ -23,6 +25,7 @@ interface Props {
 
 interface State {
   template: string
+  solution: Type | TemplateErrorCollection
 }
 
 class App extends React.Component<Props, State> {
@@ -30,19 +33,27 @@ class App extends React.Component<Props, State> {
     super(props)
     this.state = {
       template: this.props.template,
+      solution: getSolution(this.props.template),
     }
 
     // Bind methods to this context.
     this.handleChange = this.handleChange.bind(this)
-    console.log(getSolution(this.props.template))
   }
 
   private handleChange(template: string) {
     this.props.onChange(template)
     this.setState({
       template,
+      solution: getSolution(template),
     })
-    console.log(getSolution(template))
+  }
+
+  private hasErrors(): boolean {
+    if (this.state.solution instanceof Type) {
+      return false
+    } else {
+      return true
+    }
   }
 
   public render() {
@@ -54,7 +65,16 @@ class App extends React.Component<Props, State> {
             onChange={this.handleChange}
           />
         </div>
-        <div id="right" />
+        <div id="right">
+          {this.hasErrors() ? (
+            <ErrorReport
+              template={this.state.template}
+              errors={(this.state.solution as TemplateErrorCollection).errors}
+            />
+          ) : (
+            <Form type={this.state.solution as Type} />
+          )}
+        </div>
       </>
     )
   }
