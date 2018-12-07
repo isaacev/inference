@@ -3,6 +3,72 @@ import { error } from './error'
 import * as tmpl from './parse'
 import { Location } from './grammar'
 
+export namespace preds {
+  export abstract class Predicate<T> {
+    public abstract acceptsValue(val: T): boolean
+    public abstract acceptsPredicate(pred: Predicate<T>): boolean
+    public abstract toString(): string
+  }
+
+  export abstract class NumPredicate extends Predicate<number> {
+    public static combine(p1: NumPredicate, p2: NumPredicate) {
+      if (p1.acceptsPredicate(p2)) {
+        return p1
+      } else if (p2.acceptsPredicate(p1)) {
+        return p2
+      } else {
+        throw new Error('cannot combine number predicates')
+      }
+    }
+  }
+
+  export class AtLeast extends NumPredicate {
+    constructor(public min: number) {
+      super()
+    }
+
+    public acceptsValue(val: number) {
+      return val <= this.min
+    }
+
+    public acceptsPredicate(pred: NumPredicate): boolean {
+      if (pred instanceof AtLeast) {
+        return this.min <= pred.min
+      } else {
+        return false
+      }
+    }
+
+    public toString() {
+      return `(length >= ${this.min})`
+    }
+  }
+
+  export class NonZero extends AtLeast {
+    constructor() {
+      super(1)
+    }
+  }
+
+  export class Zero extends NumPredicate {
+    public acceptsValue(val: number) {
+      return val === 0
+    }
+
+    public acceptsPredicate(pred: NumPredicate): boolean {
+      if (pred instanceof Zero) {
+        return true
+      } else {
+        return false
+      }
+    }
+
+    public toString() {
+      return `(length == 0)`
+    }
+  }
+}
+
 export namespace types {
   export type Nilable = Type | Nil
 
@@ -143,14 +209,63 @@ export namespace types {
     }
   }
 
+  const repeatUnknowns = (len: number) => {
+    const arr = [] as Nilable[]
+    for (let i = 0; i < len; i++) {
+      arr.push(new Unknown())
+    }
+    return arr
+  }
+
+  export class Tuple extends Type {
+    constructor(public members: Type[]) {
+      super()
+    }
+
+    public memberAt(index: number): Nilable {
+      if (index < this.members.length) {
+        return this.members[index]
+      } else {
+        return new Unknown()
+      }
+    }
+
+    public accepts(that: Nilable): boolean {
+      if (that instanceof Tuple) {
+        return this.members.every((f, i) => f.accepts(that.memberAt(i)))
+      } else {
+        return false
+      }
+    }
+
+    public toJSON() {
+      return { type: 'tuple', members: this.members }
+    }
+
+    public toString(): string {
+      return `(${this.members.map(m => m.toString()).join(' ')})`
+    }
+  }
+
   export class List extends Type {
-    constructor(public element: Type = new Unknown()) {
+    constructor(
+      public element: Type = new Unknown(),
+      public length: preds.NumPredicate = new preds.AtLeast(0)
+    ) {
       super()
     }
 
     public accepts(that: Nilable): boolean {
       if (that instanceof List) {
-        return this.element.accepts(that.element)
+        return (
+          this.element.accepts(that.element) &&
+          this.length.acceptsPredicate(that.length)
+        )
+      } else if (that instanceof Tuple) {
+        return (
+          that.members.every(this.element.accepts.bind(this)) &&
+          this.length.acceptsValue(that.members.length)
+        )
       } else {
         return false
       }
@@ -161,7 +276,7 @@ export namespace types {
     }
 
     public toString(): string {
-      return `[${this.element.toString()}]`
+      return `[${this.element.toString()}; ${this.length.toString()}]`
     }
   }
 
@@ -328,6 +443,13 @@ export namespace types {
       return new List(unify(t1.element, t2.element))
     } else if (t1 instanceof Or && t2 instanceof Or) {
       return Or.unify(t1, t2)
+    } else if (t1 instanceof Tuple && t2 instanceof Tuple) {
+      const len = Math.max(t1.members.length, t2.members.length)
+      const members = [] as Nilable[]
+      for (let i = 0; i < len; i++) {
+        members.push(intersect(t1.memberAt(i), t2.memberAt(i)))
+      }
+      return new Tuple(members)
     }
 
     if (t1.accepts(t2)) {
@@ -337,6 +459,16 @@ export namespace types {
     } else {
       throw new error.TypeError(`cannot unify ${t1} and ${t2}`)
     }
+  }
+
+  const intersectListAndTuple = (l: List, t: Tuple): List => {
+    const element = t.members.reduce((elem, mem) => {
+      return intersect(elem, mem)
+    }, l.element)
+
+    const length = new preds.AtLeast(t.members.length)
+
+    return new List(element, length)
   }
 
   export const intersect: Infix = (t1, t2) => {
@@ -350,6 +482,17 @@ export namespace types {
       return Dict.merge(t1, t2, (t1, t2) => intersect(t1, t2))
     } else if (t1 instanceof List && t2 instanceof List) {
       return new List(intersect(t1.element, t2.element))
+    } else if (t1 instanceof Tuple && t2 instanceof Tuple) {
+      const len = Math.max(t1.members.length, t2.members.length)
+      const members = [] as Nilable[]
+      for (let i = 0; i < len; i++) {
+        members.push(unify(t1.memberAt(i), t2.memberAt(i)))
+      }
+      return new Tuple(members)
+    } else if (t1 instanceof List && t2 instanceof Tuple) {
+      return intersectListAndTuple(t1, t2)
+    } else if (t1 instanceof Tuple && t2 instanceof List) {
+      return intersectListAndTuple(t2, t1)
     }
 
     if (t1.accepts(t2)) {
@@ -389,7 +532,34 @@ export namespace types {
         }
       } else if (first instanceof paths.Index) {
         if (ctx instanceof Unknown) {
-          return new List(rec(path.rest(), new Unknown(), cons))
+          if (first.hasIndex() && typeof first.index === 'number') {
+            return new Tuple([
+              ...repeatUnknowns(first.index),
+              rec(path.rest(), new Unknown(), cons),
+            ])
+          } else {
+            return new List(rec(path.rest(), new Unknown(), cons))
+          }
+        } else if (ctx instanceof Tuple) {
+          if (first.hasIndex() && typeof first.index === 'number') {
+            // Previously assumed that this context was a tuple. Continue to
+            // assume that it's a tuple.
+            console.log('was tuple, is tuple')
+            return combine(
+              ctx,
+              new Tuple([
+                ...repeatUnknowns(first.index),
+                rec(path.rest(), ctx.memberAt(first.index), cons),
+              ])
+            )
+          } else {
+            // Previously assumed that this context was a tuple. Now it appears
+            // to be a list. Convert the tuple to a list and set that list's
+            // member type to the intersection of all tuple types.
+            console.log('was tuple, is list')
+            // return ctx.toList()
+            return ctx
+          }
         } else if (ctx instanceof List) {
           return combine(ctx, new List(rec(path.rest(), ctx.element, cons)))
         } else {
@@ -508,6 +678,12 @@ export namespace scope {
         this.parent.constrain(this.path, new types.List())
       } else if (context instanceof types.List) {
         super(parent, path, context.element)
+      } else if (context instanceof types.Tuple) {
+        //   const list = context.toList()
+        //   super(parent, path, list.element)
+        //   console.log('>>>')
+        //   this.parent.constrain(this.path, list)
+        //   console.log('<<<')
       } else {
         // This branch should throw an error.
         super(parent, path, context)
