@@ -1,8 +1,11 @@
-import { Segment, Index, Field } from '../types/paths'
+import { Segment, Index, Field, Path } from '../types/paths'
 import { Type, Unknown, Tuple, List, Dict, intersect } from '../types/types'
 import { AtLeast } from '../types/predicates'
 import { TypeError } from '../types/errors'
-import { TemplateTypeError, HelpfulTemplateTypeError } from '../syntax/errors'
+import {
+  HelpfulTemplateTypeError,
+  HelpfulTemplateError,
+} from '../syntax/errors'
 import { Statement, Location } from '../syntax/tree'
 import { stmtsToConstraints } from './constraints'
 
@@ -12,14 +15,14 @@ export const solve = (stmts: Statement[]): Type => {
   let root = null as Branch | null
   for (const con of cons) {
     if (root === null) {
-      root = new Branch(null, con.origin)
+      root = new Branch(null, new Path(), con.origin)
     }
 
     let curr = root
     for (const seg of con.path.segments) {
       curr = curr.followSegment(seg, con.origin)
     }
-    curr.setType(con.type)
+    curr.setType(con.type, con.origin)
   }
 
   if (root === null) {
@@ -33,10 +36,20 @@ class Branch {
   public type = new Unknown() as Type
   public pairs = [] as SegmentPair[]
 
-  constructor(public parent: Branch | null, public origin: Location) {}
+  constructor(
+    public parent: Branch | null,
+    public path: Path,
+    public origin: Location
+  ) {}
 
-  setType(type: Type) {
-    this.type = intersectInPlace(this.type, type, this.origin)
+  setType(type: Type, origin: Location) {
+    this.type = intersectInPlace(
+      this.path,
+      this.type,
+      type,
+      origin,
+      this.origin
+    )
     if (this.parent !== null) {
       this.parent.updateType(this.origin)
     }
@@ -54,7 +67,7 @@ class Branch {
     if (pair) {
       return pair.ref
     } else {
-      const ref = new Branch(this, origin)
+      const ref = new Branch(this, this.path.concat(seg), origin)
       this.pairs.push({ seg, ref })
       return ref
     }
@@ -175,12 +188,19 @@ const intersectPairTypes = (pairs: SegmentPair[], help: Location): Type => {
   }, new Unknown())
 }
 
-const intersectInPlace = (was: Type, apply: Type, origin: Location): Type => {
+const intersectInPlace = (
+  path: Path,
+  was: Type,
+  apply: Type,
+  origin: Location,
+  help: Location
+): Type => {
   try {
     return intersect(was, apply)
   } catch (err) {
     if (err instanceof TypeError) {
-      throw new TemplateTypeError(err, origin)
+      const msg = `${path.toString()} already had type '${was.toString()}' so cannot be used as '${apply.toString()}'`
+      throw new HelpfulTemplateError(msg, origin, help)
     } else {
       throw err
     }

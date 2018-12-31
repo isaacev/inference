@@ -95,7 +95,12 @@ main {
       color: gray;
     }
 
-    .is-error,
+    .markup-help {
+      color: #2980b9;
+      font-weight: bold;
+    }
+
+    .markup-error,
     .underline {
       color: #b84846;
       font-weight: bold;
