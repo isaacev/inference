@@ -10,9 +10,21 @@ export class TemplateErrorCollection {
   constructor(public errors: TemplateError[]) {}
 }
 
+interface HelpfulErrorParams {
+  message: string
+  origin: {
+    where: Location
+    description?: string
+  }
+  help: {
+    where: Location
+    description?: string
+  }
+}
+
 export class HelpfulTemplateError extends TemplateError {
-  constructor(message: string, origin: Location, public help: Location) {
-    super(message, origin)
+  constructor(public params: HelpfulErrorParams) {
+    super(params.message, params.origin.where)
   }
 }
 
@@ -45,11 +57,5 @@ export class MismatchedClosingTagError extends TemplateSyntaxError {
 export class TemplateTypeError extends TemplateError {
   constructor(error: TypeError, origin: Location) {
     super(error.message, origin)
-  }
-}
-
-export class HelpfulTemplateTypeError extends HelpfulTemplateError {
-  constructor(error: TypeError, origin: Location, help: Location) {
-    super(error.message, origin, help)
   }
 }

@@ -56,10 +56,10 @@ class ErrorMessage extends React.PureComponent<ErrorMessageProps> {
 
 const getMarkedLines = (err: TemplateError, doc: string) => {
   if (err instanceof HelpfulTemplateError) {
-    if (locationsOverlap([err.help, err.origin]) === false) {
+    if (locationsOverlap([err.params.help.where, err.origin]) === false) {
       return markDocument(doc, [
         { name: 'error', location: err.origin },
-        { name: 'help', location: err.help },
+        { name: 'help', location: err.params.help.where },
       ])
     }
   }

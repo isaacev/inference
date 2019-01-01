@@ -2,10 +2,7 @@ import { Segment, Index, Field, Path } from '../types/paths'
 import { Type, Unknown, Tuple, List, Dict, intersect } from '../types/types'
 import { AtLeast } from '../types/predicates'
 import { TypeError } from '../types/errors'
-import {
-  HelpfulTemplateTypeError,
-  HelpfulTemplateError,
-} from '../syntax/errors'
+import { HelpfulTemplateError } from '../syntax/errors'
 import { Statement, Location } from '../syntax/tree'
 import { stmtsToConstraints } from './constraints'
 
@@ -135,16 +132,41 @@ const aggregate = (pairs: SegmentPair[], origin: Location): Type => {
   if (firstPair.seg instanceof Index) {
     // If the first pair has an Index segment, the error will
     // be caused by the first pair with a non-Index segment.
-    const err = new TypeError(`unable to use branch or field on list`)
-    throw new HelpfulTemplateTypeError(err, origin, help)
+    throw new HelpfulTemplateError({
+      message: `unable to use branch or field on list`,
+      origin: {
+        where: origin,
+        description: `tried use as a dictionary here`,
+      },
+      help: {
+        where: help,
+        description: `was first used as list or tuple here`,
+      },
+    })
   } else if (firstPair.seg instanceof Field) {
     // If the first pair has a Field segment, the error will
     // be caused by the first pair with a non-Field segment.
-    const err = new TypeError(`unable to use index or branch on dict`)
-    throw new HelpfulTemplateTypeError(err, origin, help)
+    throw new HelpfulTemplateError({
+      message: `unable to use index or branch on dictionary`,
+      origin: {
+        where: origin,
+        description: `tried to use as a list or tuple here`,
+      },
+      help: {
+        where: help,
+        description: `was first used as a dictionary here`,
+      },
+    })
   } else {
-    const err = new TypeError(`unspecified`)
-    throw new HelpfulTemplateTypeError(err, origin, help)
+    throw new HelpfulTemplateError({
+      message: `unspecified`,
+      origin: {
+        where: origin,
+      },
+      help: {
+        where: help,
+      },
+    })
   }
 }
 
@@ -180,7 +202,15 @@ const intersectPairTypes = (pairs: SegmentPair[], help: Location): Type => {
       return intersect(type, pair.ref.type)
     } catch (err) {
       if (err instanceof TypeError) {
-        throw new HelpfulTemplateTypeError(err, pair.ref.origin, help)
+        throw new HelpfulTemplateError({
+          message: err.message,
+          origin: {
+            where: pair.ref.origin,
+          },
+          help: {
+            where: help,
+          },
+        })
       } else {
         throw err
       }
@@ -199,8 +229,15 @@ const intersectInPlace = (
     return intersect(was, apply)
   } catch (err) {
     if (err instanceof TypeError) {
-      const msg = `${path.toString()} already had type '${was.toString()}' so cannot be used as '${apply.toString()}'`
-      throw new HelpfulTemplateError(msg, origin, help)
+      throw new HelpfulTemplateError({
+        message: `${path.toString()} already had type '${was.toString()}' so cannot be used as '${apply.toString()}'`,
+        origin: {
+          where: origin,
+        },
+        help: {
+          where: help,
+        },
+      })
     } else {
       throw err
     }
