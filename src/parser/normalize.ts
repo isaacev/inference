@@ -1,27 +1,14 @@
-import * as grammar from '../grammar'
-import {
-  Statement,
-  Text,
-  Inline,
-  Block,
-  WithBlock,
-  LoopBlock,
-  MatchBlock,
-} from './tree'
-import {
-  TemplateErrorCollection,
-  TemplateSyntaxError,
-  UnknownBlockError,
-  UnknownClauseError,
-  TooManyClausesError,
-  MismatchedClosingTagError,
-} from './errors'
+import * as grammar from '~/parser/grammar'
+import * as tree from '~/parser/tree'
+import * as errors from '~/parser/errors'
+import TemplateError from '~/errors'
+import Path from '~/paths'
 
 class BlockRule {
   constructor(
     public name: string,
     public clauses: ClauseRule[],
-    public norm: (block: grammar.Block) => Block
+    public norm: (block: grammar.Block) => tree.Block
   ) {}
 
   appliesTo(block: grammar.Block) {
@@ -44,19 +31,19 @@ const normStmts = (stmts: grammar.Statement[]) => {
 const normStmt = (stmt: grammar.Statement) => {
   switch (stmt.type) {
     case 'text':
-      return { type: 'text', text: stmt.text, where: stmt.pos } as Text
+      return { type: 'text', text: stmt.text, where: stmt.pos } as tree.Text
     case 'inline':
       return {
         type: 'inline',
-        field: stmt.field,
+        field: Path.fromFields(stmt.field),
         where: stmt.pos,
-      } as Inline
+      } as tree.Inline
     case 'block':
       return normBlock(stmt)
   }
 }
 
-const normBlock = (block: grammar.Block): Block => {
+const normBlock = (block: grammar.Block): tree.Block => {
   const rule = BLOCK_RULES.find(r => r.appliesTo(block))
   if (rule) {
     return rule.norm(block)
@@ -64,28 +51,28 @@ const normBlock = (block: grammar.Block): Block => {
     return {
       type: 'block',
       name: 'unknown',
-      field: block.field,
+      field: Path.fromFields(block.field),
       stmts: normStmts(block.stmts),
       where: block.pos,
     }
   }
 }
 
-const normWith = (block: grammar.Block): WithBlock => {
+const normWith = (block: grammar.Block): tree.WithBlock => {
   return {
     type: 'block',
     name: 'with',
-    field: block.field,
+    field: Path.fromFields(block.field),
     stmts: normStmts(block.stmts),
     where: block.pos,
   }
 }
 
-const normLoop = (block: grammar.Block): LoopBlock => {
+const normLoop = (block: grammar.Block): tree.LoopBlock => {
   return {
     type: 'block',
     name: 'loop',
-    field: block.field,
+    field: Path.fromFields(block.field),
     stmts: normStmts(block.stmts),
     emptyClause:
       block.clauses.length > 0 ? normStmts(block.clauses[0].stmts) : [],
@@ -93,19 +80,19 @@ const normLoop = (block: grammar.Block): LoopBlock => {
   }
 }
 
-const normMatch = (block: grammar.Block): MatchBlock => {
+const normMatch = (block: grammar.Block): tree.MatchBlock => {
   return {
     type: 'block',
     name: 'match',
-    field: block.field,
+    field: Path.fromFields(block.field),
     stmts: normStmts(block.stmts),
     orClauses: block.clauses.map(c => normStmts(c.stmts)),
     where: block.pos,
   }
 }
 
-const findErrors = (stmts: grammar.Statement[]) => {
-  const errs = [] as TemplateSyntaxError[]
+const findErrors = (template: string, stmts: grammar.Statement[]) => {
+  const errs = [] as TemplateError[]
 
   // Check each block node to make sure it:
   // 1. corresponds to a known block form
@@ -113,17 +100,23 @@ const findErrors = (stmts: grammar.Statement[]) => {
   stmts.filter(isBlockStmt).forEach(blockStmt => {
     const blockRule = BLOCK_RULES.find(f => f.appliesTo(blockStmt))
     if (!blockRule) {
-      errs.push(new UnknownBlockError(blockStmt))
+      errs.push(
+        errors.unknownBlock({
+          block: blockStmt.open.text,
+          template,
+          where: blockStmt.open.pos,
+        })
+      )
 
       // Even though no corresponding block form was found, child blocks
       // and clauses can still be checked for internal errors
-      errs.push(...findErrors(blockStmt.stmts))
+      errs.push(...findErrors(template, blockStmt.stmts))
       blockStmt.clauses.forEach(clause => {
-        errs.push(...findErrors(clause.stmts))
+        errs.push(...findErrors(template, clause.stmts))
       })
     } else {
       // Check any non-clause substatements
-      errs.push(...findErrors(blockStmt.stmts))
+      errs.push(...findErrors(template, blockStmt.stmts))
 
       // Check any clauses
       blockStmt.clauses.forEach((clause, index) => {
@@ -132,7 +125,15 @@ const findErrors = (stmts: grammar.Statement[]) => {
           const clauseName = clause.name.text
           const blockName = blockRule.name
           const origin = clause.pos
-          errs.push(new UnknownClauseError(clauseName, blockName, origin))
+          errs.push(
+            errors.unknownClause({
+              block: blockName,
+              clause: clauseName,
+              template,
+              where: origin,
+              supported: blockRule.clauses.map(c => c.name),
+            })
+          )
         } else {
           const similarClausesBefore = blockStmt.clauses
             .slice(0, index)
@@ -143,19 +144,34 @@ const findErrors = (stmts: grammar.Statement[]) => {
             const blockName = blockRule.name
             const clauseName = clauseRule.name
             const origin = clause.pos
-            errs.push(new TooManyClausesError(blockName, clauseName, origin))
+            errs.push(
+              errors.tooManyClauses({
+                block: blockName,
+                clause: clauseName,
+                template,
+                where: origin,
+              })
+            )
           }
         }
 
         // Check clause statements for internal errors
-        errs.push(...findErrors(clause.stmts))
+        errs.push(...findErrors(template, clause.stmts))
       })
 
       // Check block closing tag
       if (blockStmt.close.text !== blockRule.name) {
         const blockName = blockRule.name
         const origin = blockStmt.close.pos
-        errs.push(new MismatchedClosingTagError(blockName, origin))
+        errs.push(
+          errors.mismatchedClosingTag({
+            block: blockName,
+            openingLine: blockStmt.open.pos.start.line,
+            found: blockStmt.close.text,
+            template,
+            where: origin,
+          })
+        )
       }
     }
   })
@@ -178,19 +194,23 @@ const toRawTree = (tmpl: string): grammar.Statement[] => {
     return grammar.parse(tmpl)
   } catch (err) {
     if (err instanceof grammar.SyntaxError) {
-      throw new TemplateSyntaxError(err.message, err.location)
+      throw errors.parseError({
+        message: err.message,
+        template: tmpl,
+        where: err.location,
+      })
     } else {
       throw err
     }
   }
 }
 
-export const parse = (tmpl: string): Statement[] => {
+export const parse = (tmpl: string): tree.Statement[] => {
   const raw = toRawTree(tmpl)
-  const errs = findErrors(raw)
+  const errs = findErrors(tmpl, raw)
 
   if (errs.length > 0) {
-    throw new TemplateErrorCollection(errs)
+    throw errs
   } else {
     return normStmts(raw)
   }

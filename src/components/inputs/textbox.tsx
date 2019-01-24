@@ -2,8 +2,8 @@
 import * as React from 'react'
 
 // App libraries.
-import { Type, StrValue } from '../../analysis/types/types'
-import { Path } from '../../analysis/types/paths'
+import Type from '~/types'
+import Path from '~/paths'
 
 // App components.
 import Wrapper from './wrapper'
@@ -16,19 +16,6 @@ interface Props {
 
 export default class Textbox extends React.Component<Props> {
   public render() {
-    if (this.props.type instanceof StrValue) {
-      return (
-        <Wrapper path={this.props.path} readonly={this.props.readonly}>
-          <input
-            id={this.props.path.toString()}
-            type="text"
-            placeholder={this.props.type.value}
-            disabled={true}
-          />
-        </Wrapper>
-      )
-    }
-
     return (
       <Wrapper path={this.props.path} readonly={this.props.readonly}>
         <input

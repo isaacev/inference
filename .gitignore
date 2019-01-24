@@ -5,4 +5,4 @@ dist
 
 # Files
 .DS_Store
-src/analysis/grammar/index.js
+src/parser/grammar/index.js

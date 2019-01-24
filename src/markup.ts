@@ -1,8 +1,9 @@
-import { Location } from './analysis/syntax/tree'
+import { Location } from '~/parser/grammar'
 
 interface MarkerConfig {
   name: string
   location: Location
+  description?: string
 }
 
 interface Line {

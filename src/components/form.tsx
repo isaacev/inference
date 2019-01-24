@@ -2,8 +2,8 @@
 import * as React from 'react'
 
 // App libraries.
-import { Type } from '../analysis/types/types'
-import { Path } from '../analysis/types/paths'
+import Type from '~/types'
+import Path from '~/paths'
 
 // Components.
 import Any from './inputs/any'

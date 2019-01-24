@@ -3,7 +3,7 @@ import * as React from 'react'
 import classnames from 'classnames'
 
 // App libraries.
-import { Path } from '../../analysis/types/paths'
+import Path from '~/paths'
 
 interface Props {
   path: Path

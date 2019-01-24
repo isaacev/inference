@@ -2,24 +2,21 @@
 import * as React from 'react'
 
 // App libraries.
-import {
-  Type,
-  Dict,
-  Or,
-  Tuple,
-  List,
-  Num,
-  Bool,
-  Str,
-  Unknown,
-} from '../../analysis/types/types'
-import { Path, Field } from '../../analysis/types/paths'
+import Path from '~/paths'
+import Field from '~/paths/segments/field'
+import Type from '~/types'
+import Unknown from '~/types/unknown'
+import Dict from '~/types/dict'
+import List from '~/types/list'
+import Tuple from '~/types/tuple'
+import Str from '~/types/str'
+import Num from '~/types/num'
+import Bool from '~/types/bool'
 
 // App components.
-import Textbox from './textbox'
-import Choice from './choice'
-import Repeater from './repeater'
-import Checkbox from './checkbox'
+import Textbox from '~/components/inputs/textbox'
+import Repeater from '~/components/inputs/repeater'
+import Checkbox from '~/components/inputs/checkbox'
 
 interface Props {
   path: Path
@@ -40,14 +37,6 @@ export default class Any extends React.Component<Props> {
           />
         )
       })
-    } else if (this.props.type instanceof Or) {
-      return (
-        <Choice
-          path={this.props.path}
-          type={this.props.type}
-          readonly={this.props.readonly}
-        />
-      )
     } else if (this.props.type instanceof List) {
       return (
         <Repeater

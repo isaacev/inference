@@ -1,3 +1,5 @@
+import Path from '~/paths'
+
 export interface Location {
   start: {
     offset: number
@@ -21,14 +23,14 @@ export interface Text {
 
 export interface Inline {
   type: 'inline'
-  field: string[]
+  field: Path
   where: Location
 }
 
 export interface Block {
   type: 'block'
   name: string
-  field: string[]
+  field: Path
   stmts: Statement[]
   where: Location
 }
