@@ -86,10 +86,28 @@ main {
 .part-text {
   margin: 1rem 0;
   font-size: 1.2rem;
+
+  code {
+    margin: 0 2px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: #eee;
+    color: #222;
+    font-family: 'Dank Mono', monospace;
+    font-size: 1.1rem;
+  }
 }
 
 .part-type {
-  // TODO
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 3px;
+  background: #eee;
+  color: #222;
+  overflow-x: scroll;
+  font-family: 'Dank Mono', monospace;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .part-quote {
@@ -103,6 +121,9 @@ main {
   background: #eee;
   color: gray;
   overflow-x: scroll;
+  font-family: 'Dank Mono', monospace;
+  font-size: 1.2rem;
+  line-height: 1;
 
   .snippet-error {
     font-weight: bold;

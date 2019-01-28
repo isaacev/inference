@@ -14,11 +14,10 @@ interface State {
 export default class Right extends React.Component<Props, State> {
   public render() {
     if (this.props.mode === 'error') {
-      const { title, verbose } = this.props.error.report
       return (
         <div id="right">
           <div className="report-container">
-            <Report title={title} parts={verbose} />
+            <Report {...this.props.error.report} />
           </div>
         </div>
       )

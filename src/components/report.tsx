@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { ReportPart } from '~/errors/report'
 import Type from '~/types'
+import { tokenize } from '~/errors/utils'
 
 interface Props {
   title: string
@@ -55,7 +56,7 @@ const Part = (props: { part: ReportPart }): JSX.Element => {
 }
 
 const ReportText = (props: { text: string }) => {
-  return <p className="part-text">{props.text}</p>
+  return <p className="part-text">{replaceTicksWithInlineCode(props.text)}</p>
 }
 
 const ReportType = (props: { type: Type }) => {
@@ -110,8 +111,44 @@ const ReportSnippetMultiLine = (props: {
   fromLine: number
   toLine: number
 }) => {
-  console.log('multi', props)
-  return null
+  const fullLines = props.template
+    .split('\n')
+    .slice(props.fromLine - 1, props.toLine)
+  const maxGutterSpaces = Math.max(
+    props.fromLine.toString().length,
+    props.toLine.toString().length
+  )
+  return (
+    <pre className="part-snippet">
+      {fullLines.map((fullLine, i) => {
+        const lineNum = props.fromLine + i
+        return (
+          <React.Fragment key={i}>
+            {lineNum}
+            {' '.repeat(maxGutterSpaces - lineNum.toString().length)}
+            {` | `}
+            <span className="snippet-error">{fullLine}</span>
+            <br />
+          </React.Fragment>
+        )
+      })}
+    </pre>
+  )
 }
 
 const ReportEmpty = () => null
+
+const replaceTicksWithInlineCode = (str: string) => {
+  const pat = /\`([^\`]+)\`/g
+  return (
+    <React.Fragment>
+      {tokenize(str, pat, match => ({ code: match[1] })).map((token, i) => {
+        if (typeof token === 'string') {
+          return <span key={i}>{token}</span>
+        } else {
+          return <code key={i}>{token.code}</code>
+        }
+      })}
+    </React.Fragment>
+  )
+}
