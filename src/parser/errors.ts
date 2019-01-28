@@ -9,7 +9,7 @@ export const parseError = (params: {
 }) =>
   new TemplateError({
     title: 'Parsing error',
-    verbose: [
+    parts: [
       report.text('Unable to parse template on line $0', [
         params.where.start.line.toString(),
       ]),
@@ -25,7 +25,7 @@ export const unknownBlock = (params: {
 }) =>
   new TemplateError({
     title: 'Block error',
-    verbose: [
+    parts: [
       report.text('Unknown block named `$0`', [params.block]),
       report.snippet(params.template, params.where),
     ],
@@ -40,7 +40,7 @@ export const unknownClause = (params: {
 }) =>
   new TemplateError({
     title: 'Block error',
-    verbose: [
+    parts: [
       report.text('Unknown clause named `$0`', [params.clause]),
       report.snippet(params.template, params.where),
       report.text(
@@ -59,7 +59,7 @@ export const tooManyClauses = (params: {
 }) =>
   new TemplateError({
     title: 'Block error',
-    verbose: [
+    parts: [
       report.text('Too many `$0` clauses', [params.clause]),
       report.snippet(params.template, params.where),
       report.text(
@@ -78,7 +78,7 @@ export const mismatchedClosingTag = (params: {
 }) =>
   new TemplateError({
     title: 'Block error',
-    verbose: [
+    parts: [
       report.text('Expected `$0` closing tag', [params.block]),
       report.snippet(params.template, params.where),
       report.text(

@@ -1,9 +1,10 @@
 import Type from '~/types'
 import { Location } from '~/parser/grammar'
+import { sprintf } from '~/errors/utils'
 
 export interface Report {
   title: string
-  verbose: ReportPart[]
+  parts: ReportPart[]
 }
 
 export type ReportPart =
@@ -78,23 +79,4 @@ export const snippet = (template: string, where: Location): ReportSnippet => {
       },
     }
   }
-}
-
-const sprintf = (fmt: string, vars: string[] = []): string => {
-  let whole = ''
-  for (let i = 0; i < fmt.length; i++) {
-    const match = fmt.slice(i).match(/^\$(\d+)/)
-    if (match !== null) {
-      const ref = parseInt(match[1], 10)
-      if (vars.length > ref) {
-        whole += vars[ref]
-      } else {
-        whole += match[0]
-      }
-      i += match[0].length - 1
-    } else {
-      whole += fmt[i]
-    }
-  }
-  return whole
 }

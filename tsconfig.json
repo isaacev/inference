@@ -3,6 +3,7 @@
     "lib": ["dom", "es6", "es2017"],
     "jsx": "react",
     "baseUrl": ".",
+    "noFallthroughCasesInSwitch": true,
     "paths": {
       "~*": ["./src*"]
     },
