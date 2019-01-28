@@ -3,6 +3,8 @@ import Unknown from '~/types/unknown'
 import Tuple from '~/types/tuple'
 
 export default class List extends Type {
+  public readonly name = 'list'
+
   constructor(
     public readonly element: Type = new Unknown(),
     public readonly minLength: number = 0

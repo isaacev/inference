@@ -1,6 +1,8 @@
 import Type from '~/types'
 
 export default class Unknown extends Type {
+  public readonly name = 'unknown'
+
   public accepts(): boolean {
     return true
   }

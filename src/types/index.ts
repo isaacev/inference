@@ -1,4 +1,6 @@
 export default abstract class Type {
+  public abstract readonly name: string
+
   public accepts(that: Type): boolean {
     return false
   }

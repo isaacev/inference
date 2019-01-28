@@ -1,6 +1,8 @@
 import Type from '~/types'
 
 export default class Num extends Type {
+  public readonly name = 'num'
+
   public accepts(that: Type): boolean {
     if (that instanceof Num) {
       return true

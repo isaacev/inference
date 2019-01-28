@@ -1,6 +1,8 @@
 import Type from '~/types'
 
 export default class Bool extends Type {
+  public readonly name = 'bool'
+
   public accepts(that: Type): boolean {
     if (that instanceof Bool) {
       return true

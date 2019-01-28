@@ -1,6 +1,8 @@
 import Type from '~/types'
 
 export default class Str extends Type {
+  public readonly name = 'str'
+
   public accepts(that: Type): boolean {
     if (that instanceof Str) {
       return true
