@@ -2,7 +2,7 @@ import Type from '~/types'
 import Unknown from '~/types/unknown'
 
 export default class Dict extends Type {
-  constructor(public readonly fields: { name: string; type: Type }[]) {
+  constructor(public readonly fields: { name: string; type: Type }[] = []) {
     super()
   }
 

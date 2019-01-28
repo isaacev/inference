@@ -3,7 +3,7 @@ import Unknown from '~/types/unknown'
 import List from '~/types/list'
 
 export default class Tuple extends Type {
-  constructor(public readonly members: Type[]) {
+  constructor(public readonly members: Type[] = []) {
     super()
   }
 
