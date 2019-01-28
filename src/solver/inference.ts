@@ -350,8 +350,14 @@ const derriveType = (tmpl: string, node: Node): Type => {
           } catch {
             throw errors.typeMismatchError({
               path: node.path,
-              original: { type: prevType, where: prevPair.node.because },
-              conflict: { type: nextType, where: nextPair.node.because },
+              original: {
+                type: new List(prevType),
+                where: prevPair.node.because,
+              },
+              conflict: {
+                type: new List(nextType),
+                where: nextPair.node.because,
+              },
               template: tmpl,
             })
           }
