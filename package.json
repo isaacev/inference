@@ -1,7 +1,7 @@
 {
   "scripts": {
     "clean": "rimraf .cache dist",
-    "build": "npm run grammar && parcel build --out-file index.html --public-url ./ index.html",
+    "build": "npm run grammar && parcel build --out-file index.html --public-url ./ src/index.html",
     "slides": "cp docs/slides.html dist",
     "check": "tsc --noEmit",
     "fmt": "prettier --write src/*.ts src/*.js src/**/*.{ts,tsx}",
