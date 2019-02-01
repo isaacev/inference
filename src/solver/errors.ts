@@ -59,19 +59,25 @@ export const unsupportedFieldError = (params: {
   field: Field
   type: Type
   where: Location
+  original: Location
   template: string
 }) =>
   new TemplateError({
     title: 'Type mismatch',
     parts: [
       report.text(
-        'The value `$0` is not a Dictionary, so has no fields to access.',
-        [params.path.toString()]
+        'The value `$0` is not a Dictionary, so has no fields to access on line $1:',
+        [params.path.toString(), params.where.start.line.toString()]
       ),
       report.errorSnippet(params.template, params.where),
-      report.text('The value `$0` already had the type:', [
-        params.path.toString(),
-      ]),
-      report.type(params.type),
+      report.text(
+        '`$0` was assumed to have the type `$1` because of its use on line $2:',
+        [
+          params.path.toString(),
+          params.type.toString(),
+          params.original.start.line.toString(),
+        ]
+      ),
+      report.helpSnippet(params.template, params.original),
     ],
   })

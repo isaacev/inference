@@ -269,6 +269,7 @@ const extendBranchNode = (
           field: head,
           type: derriveType(tmpl, node),
           where: cons.origin,
+          original: node.because,
           template: tmpl,
         })
       case 'field': {
