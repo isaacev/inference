@@ -1,10 +1,6 @@
 export default abstract class Type {
   public abstract readonly name: string
 
-  public accepts(that: Type): boolean {
-    return false
-  }
-
   public intersect(that: Type): Type {
     // Uses the `Type#toString()` method instead of `instanceof` because the
     // Unknown type cannot be used by its parent class. If the parent & child

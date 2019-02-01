@@ -21,24 +21,6 @@ export default class Tuple extends Type {
     return this.members.length
   }
 
-  public accepts(that: Type): boolean {
-    if (that instanceof Tuple) {
-      return this.members.every((member, index) => {
-        return member.accepts(that.memberAt(index))
-      })
-    }
-
-    if (that instanceof List) {
-      const elementAlwaysAccepted = this.members.every(member => {
-        return member.accepts(that.element)
-      })
-      const listIsAlwaysAsLongAsTuple = that.minLength >= this.length()
-      return elementAlwaysAccepted && listIsAlwaysAsLongAsTuple
-    }
-
-    return super.accepts(that)
-  }
-
   public intersect(that: Type): Type {
     if (that instanceof List) {
       const element = this.members.reduce((acc, member) => {

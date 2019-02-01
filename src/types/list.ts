@@ -12,18 +12,6 @@ export default class List extends Type {
     super()
   }
 
-  public accepts(that: Type): boolean {
-    if (that instanceof List) {
-      return this.element.accepts(that.element)
-    }
-
-    if (that instanceof Tuple) {
-      return that.members.every(this.element.accepts.bind(this))
-    }
-
-    return super.accepts(that)
-  }
-
   public intersect(that: Type): Type {
     if (that instanceof List) {
       const element = this.element.intersect(that.element)

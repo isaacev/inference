@@ -25,16 +25,6 @@ export default class Dict extends Type {
     return new Unknown()
   }
 
-  public accepts(that: Type): boolean {
-    if (that instanceof Dict) {
-      return this.fields.every(field => {
-        return field.type.accepts(that.getField(field.name))
-      })
-    }
-
-    return super.accepts(that)
-  }
-
   public intersect(that: Type): Type {
     if (that instanceof Dict) {
       const thisNames = this.fields.map(field => field.name)

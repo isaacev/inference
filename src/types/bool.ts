@@ -3,14 +3,6 @@ import Type from '~/types'
 export default class Bool extends Type {
   public readonly name = 'bool'
 
-  public accepts(that: Type): boolean {
-    if (that instanceof Bool) {
-      return true
-    }
-
-    return super.accepts(that)
-  }
-
   public intersect(that: Type): Type {
     if (that instanceof Bool) {
       return new Bool()
