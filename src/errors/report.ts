@@ -52,16 +52,28 @@ export const quote = (lines: string[]): ReportQuote => {
 
 interface ReportSnippet {
   form: 'snippet'
+  mode: 'error' | 'help'
   template: string
   snippet:
     | { size: 'single'; line: number; columns: [number, number] }
     | { size: 'multi'; lines: [number, number] }
 }
 
-export const snippet = (template: string, where: Location): ReportSnippet => {
+export const errorSnippet = (template: string, where: Location) =>
+  snippet('error', template, where)
+
+export const helpSnippet = (template: string, where: Location) =>
+  snippet('help', template, where)
+
+const snippet = (
+  mode: ReportSnippet['mode'],
+  template: string,
+  where: Location
+): ReportSnippet => {
   if (where.start.line === where.end.line) {
     return {
       form: 'snippet',
+      mode,
       template,
       snippet: {
         size: 'single',
@@ -72,6 +84,7 @@ export const snippet = (template: string, where: Location): ReportSnippet => {
   } else {
     return {
       form: 'snippet',
+      mode,
       template,
       snippet: {
         size: 'multi',
