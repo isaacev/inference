@@ -16,7 +16,7 @@ interface Props {
 interface State {
   template: string
   analysis:
-    | { mode: 'error'; error: TemplateError }
+    | { mode: 'error'; error: TemplateError; constraints?: Constraint[] }
     | { mode: 'okay'; constraints: Constraint[]; solution: Type }
 }
 
@@ -56,12 +56,15 @@ export default class App extends React.Component<Props, State> {
 const analyze = (template: string): State['analysis'] => {
   try {
     const constraints = toConstraints(toStatements(template), new Path())
-    const solution = solve(template, constraints)
-
-    return {
-      mode: 'okay',
-      constraints,
-      solution,
+    try {
+      const solution = solve(template, constraints)
+      return { mode: 'okay', constraints, solution }
+    } catch (err) {
+      if (err instanceof TemplateError) {
+        return { mode: 'error', constraints, error: err }
+      } else {
+        throw err
+      }
     }
   } catch (err) {
     if (err instanceof TemplateError) {
