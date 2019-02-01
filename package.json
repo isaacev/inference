@@ -3,11 +3,13 @@
     "build": "npm run grammar && parcel build --out-file index.html --public-url ./ src/index.html",
     "check": "tsc --noEmit",
     "clean": "rimraf .cache dist",
+    "cover": "npm test -- --coverage",
     "deploy": "npm run clean && npm run build && npm run slides && gh-pages -d dist",
     "fmt": "prettier --write src/*.ts src/*.js src/**/*.{ts,tsx}",
     "grammar": "pegjs -o src/parser/grammar/index.js --format umd src/parser/grammar/grammar.pegjs",
     "slides": "cp docs/slides.html dist",
-    "start": "parcel --no-hmr --no-cache ./src/index.html"
+    "start": "parcel --no-hmr --no-cache ./src/index.html",
+    "test": "jest"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-pro": "^5.4.1",
@@ -17,16 +19,19 @@
     "@fortawesome/react-fontawesome": "^0.1.3",
     "@types/classnames": "^2.2.6",
     "@types/codemirror": "0.0.63",
+    "@types/jest": "^23.3.13",
     "@types/node": "^10.11.2",
     "@types/react": "^16.4.16",
     "@types/react-dom": "^16.0.9",
     "classnames": "^2.2.6",
     "gh-pages": "^2.0.1",
+    "jest": "^23.6.0",
     "node-sass": "^4.9.3",
     "parcel-bundler": "^1.11.0",
     "pegjs": "^0.10.0",
     "prettier": "^1.14.3",
     "rimraf": "^2.6.2",
+    "ts-jest": "^23.10.5",
     "typescript": "^3.2.2"
   },
   "dependencies": {
