@@ -1,0 +1,235 @@
+import { Point } from '~/syntax'
+import { TokenName, lex } from '~/syntax/lex'
+
+const point = (line: number, column: number, offset: number) => ({
+  line,
+  column,
+  offset,
+})
+
+const span = (start: Point, end: Point = start) => ({ start, end })
+
+const mapPatternToToken = (symbol: string, name: TokenName) => {
+  const text = '{{' + symbol + '}}'
+  expect(lex(text)).toEqual([
+    {
+      name: TokenName.LeftMeta,
+      lexeme: '{{',
+      location: span(point(1, 1, 0), point(1, 3, 2)),
+    },
+    {
+      name,
+      lexeme: symbol,
+      location: span(
+        point(1, 3, 2),
+        point(1, 3 + symbol.length, 2 + symbol.length)
+      ),
+    },
+    {
+      name: TokenName.RightMeta,
+      lexeme: '}}',
+      location: span(
+        point(1, 3 + symbol.length, 2 + symbol.length),
+        point(1, 5 + symbol.length, 4 + symbol.length)
+      ),
+    },
+    {
+      name: TokenName.EOF,
+      lexeme: '',
+      location: span(point(1, 5 + symbol.length, 4 + symbol.length)),
+    },
+  ])
+}
+
+describe('transitions between text, actions, and EOF', () => {
+  test('lex an empty string as a single EOF token', () => {
+    expect(lex('')).toEqual([
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(1, 1, 0)),
+      },
+    ])
+  })
+
+  test('lex a whitespace string to a text token and an EOF token', () => {
+    expect(lex('   ')).toEqual([
+      {
+        name: TokenName.Text,
+        lexeme: '   ',
+        location: span(point(1, 1, 0), point(1, 4, 3)),
+      },
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(1, 4, 3)),
+      },
+    ])
+  })
+
+  test('lex a multiline string as a text token and an EOF token', () => {
+    expect(lex('foo\n bar')).toEqual([
+      {
+        name: TokenName.Text,
+        lexeme: 'foo\n bar',
+        location: span(point(1, 1, 0), point(2, 5, 8)),
+      },
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(2, 5, 8)),
+      },
+    ])
+  })
+
+  test('skip text token if action is followed immediately by EOF', () => {
+    expect(lex('a{{}}')).toEqual([
+      {
+        name: TokenName.Text,
+        lexeme: 'a',
+        location: span(point(1, 1, 0), point(1, 2, 1)),
+      },
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 2, 1), point(1, 4, 3)),
+      },
+      {
+        name: TokenName.RightMeta,
+        lexeme: '}}',
+        location: span(point(1, 4, 3), point(1, 6, 5)),
+      },
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(1, 6, 5)),
+      },
+    ])
+  })
+
+  test('skip text token if string begins immediately with action', () => {
+    expect(lex('{{}}a')).toEqual([
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.RightMeta,
+        lexeme: '}}',
+        location: span(point(1, 3, 2), point(1, 5, 4)),
+      },
+      {
+        name: TokenName.Text,
+        lexeme: 'a',
+        location: span(point(1, 5, 4), point(1, 6, 5)),
+      },
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(1, 6, 5)),
+      },
+    ])
+  })
+})
+
+describe('identification of patterns inside actions', () => {
+  test('ignore inline whitespace inside of an action', () => {
+    expect(lex('{{ \t}}')).toEqual([
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.RightMeta,
+        lexeme: '}}',
+        location: span(point(1, 5, 4), point(1, 7, 6)),
+      },
+      {
+        name: TokenName.EOF,
+        lexeme: '',
+        location: span(point(1, 7, 6)),
+      },
+    ])
+  })
+
+  test('identify an integer literal inside of an action', () => {
+    mapPatternToToken('123', TokenName.Integer)
+  })
+
+  test('identify word tokens with only letter characters', () => {
+    mapPatternToToken('abc', TokenName.Word)
+    mapPatternToToken('ABC', TokenName.Word)
+    mapPatternToToken('abcDEF', TokenName.Word)
+    mapPatternToToken('ABCdef', TokenName.Word)
+  })
+
+  test('identify word tokens that include number characters', () => {
+    mapPatternToToken('a12', TokenName.Word)
+    mapPatternToToken('A2', TokenName.Word)
+  })
+
+  test('identify miscellaneous action symbols', () => {
+    mapPatternToToken('.', TokenName.Dot)
+    mapPatternToToken('#', TokenName.Hash)
+    mapPatternToToken('[', TokenName.LeftBracket)
+    mapPatternToToken(']', TokenName.RightBracket)
+    mapPatternToToken('/', TokenName.Slash)
+  })
+})
+
+describe('identification for incorrect patterns inside actions', () => {
+  test('report a newline or EOF inside of an action', () => {
+    expect(lex('{{abc')).toEqual([
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.Word,
+        lexeme: 'abc',
+        location: span(point(1, 3, 2), point(1, 6, 5)),
+      },
+      {
+        name: TokenName.Error,
+        lexeme: 'unclosed action',
+        location: span(point(1, 6, 5)),
+      },
+    ])
+
+    expect(lex('{{abc\n')).toEqual([
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.Word,
+        lexeme: 'abc',
+        location: span(point(1, 3, 2), point(1, 6, 5)),
+      },
+      {
+        name: TokenName.Error,
+        lexeme: 'unclosed action',
+        location: span(point(1, 6, 5)),
+      },
+    ])
+  })
+
+  test('report an unsupported symbol inside of an action', () => {
+    expect(lex('{{@}}')).toEqual([
+      {
+        name: TokenName.LeftMeta,
+        lexeme: '{{',
+        location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.Error,
+        lexeme: 'unknown symbol',
+        location: span(point(1, 3, 2)),
+      },
+    ])
+  })
+})
