@@ -134,12 +134,17 @@ describe('transitions between text, actions, and EOF', () => {
 })
 
 describe('identification of patterns inside actions', () => {
-  test('ignore inline whitespace inside of an action', () => {
+  test('mark inline whitespace inside of an action', () => {
     expect(lex('{{ \t}}')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
         location: span(point(1, 1, 0), point(1, 3, 2)),
+      },
+      {
+        name: TokenName.Spaces,
+        lexeme: ' \t',
+        location: span(point(1, 3, 2), point(1, 5, 4)),
       },
       {
         name: TokenName.RightMeta,

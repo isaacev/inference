@@ -11,6 +11,7 @@ export enum TokenName {
   RightBracket = 'RightBracket',
   RightMeta = 'RightMeta',
   Slash = 'Slash',
+  Spaces = 'Spaces',
   Text = 'Text',
   Word = 'Word',
 }
@@ -74,10 +75,6 @@ class Lexer {
     while (this.accept(valid)) {}
   }
 
-  public ignore(): void {
-    this.start = this.pos
-  }
-
   public distance(): number {
     return this.pos.offset - this.start.offset
   }
@@ -99,7 +96,7 @@ type LexFunc = (lexer: Lexer) => LexFunc | null
 
 const LEFT_META = '{{'
 const RIGHT_META = '}}'
-const WHITESPACE = ' \t\n'
+const SPACES = ' \t'
 const LOWER_LETTERS = 'abcdefghijklmnopqrstuvwxyz'
 const UPPER_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const NUMBERS = '0123456789'
@@ -142,9 +139,8 @@ const lexInsideAction: LexFunc = lexer => {
 
     const char = lexer.read()
 
-    if (lexer.accept(WHITESPACE)) {
-      lexer.ignore()
-      continue
+    if (lexer.accept(SPACES)) {
+      return lexSpaces
     }
 
     if (lexer.accept(NUMBERS)) {
@@ -181,6 +177,12 @@ const lexInsideAction: LexFunc = lexer => {
         return null
     }
   }
+}
+
+const lexSpaces: LexFunc = lexer => {
+  lexer.acceptRun(SPACES)
+  lexer.emit(TokenName.Spaces)
+  return lexInsideAction
 }
 
 const lexNumber: LexFunc = lexer => {
