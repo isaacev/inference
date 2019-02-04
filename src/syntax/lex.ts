@@ -1,6 +1,7 @@
 import { Point, Span } from '~/syntax'
 
 export enum TokenName {
+  Dollar = 'Dollar',
   Dot = 'Dot',
   EOF = 'EOF',
   Error = 'Error',
@@ -8,6 +9,7 @@ export enum TokenName {
   Integer = 'Integer',
   LeftBracket = 'LeftBracket',
   LeftMeta = 'LeftMeta',
+  RightAngle = 'RightAngle',
   RightBracket = 'RightBracket',
   RightMeta = 'RightMeta',
   Slash = 'Slash',
@@ -152,6 +154,10 @@ const lexInsideAction: LexFunc = lexer => {
     }
 
     switch (char) {
+      case '$':
+        lexer.advance()
+        lexer.emit(TokenName.Dollar)
+        break
       case '#':
         lexer.advance()
         lexer.emit(TokenName.Hash)
@@ -163,6 +169,10 @@ const lexInsideAction: LexFunc = lexer => {
       case '[':
         lexer.advance()
         lexer.emit(TokenName.LeftBracket)
+        break
+      case '>':
+        lexer.advance()
+        lexer.emit(TokenName.RightAngle)
         break
       case ']':
         lexer.advance()
