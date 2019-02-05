@@ -3,13 +3,13 @@ import { Token, TokenName, toTokens } from '~/syntax/lex'
 
 export type Word = { text: string; location: Span }
 
-export type PathSegment =
+export type PathChunkSegment =
   | { type: 'offset'; offset: Word; value: number; location: Span }
   | { type: 'field'; field: Word; location: Span }
 
-export type Path =
+export type PathChunk =
   | { type: 'root'; location: Span }
-  | { type: 'chain'; segments: PathSegment[]; location: Span }
+  | { type: 'chain'; segments: PathChunkSegment[]; location: Span }
 
 export interface TextChunk {
   chunk: 'text'
@@ -20,14 +20,14 @@ export interface TextChunk {
 export interface InlineChunk {
   chunk: 'inline'
   name: Word
-  path: Path
+  path: PathChunk
   location: Span
 }
 
 export interface BlockOpenChunk {
   chunk: 'block-open'
   name: Word
-  path: Path
+  path: PathChunk
   location: Span
 }
 
@@ -177,9 +177,9 @@ const parseBlockClose: Parser<TokenName.LeftMeta> = (leftMeta, stream) => {
   }
 }
 
-const parsePath = (stream: TokenStream): Path => {
+const parsePath = (stream: TokenStream): PathChunk => {
   const dollar = stream.nextMatches(TokenName.Dollar)
-  const segments = [] as PathSegment[]
+  const segments = [] as PathChunkSegment[]
   while (true) {
     const peek = stream.peekMatches(TokenName.LeftBracket, TokenName.Dot)
     switch (peek.name) {
@@ -206,7 +206,7 @@ const parsePath = (stream: TokenStream): Path => {
   }
 }
 
-const parseOffsetSegment = (stream: TokenStream): PathSegment => {
+const parseOffsetSegment = (stream: TokenStream): PathChunkSegment => {
   const leftBracket = stream.nextMatches(TokenName.LeftBracket)
   const offset = stream.nextMatches(TokenName.Integer)
   const rightBracket = stream.nextMatches(TokenName.RightBracket)
@@ -221,7 +221,7 @@ const parseOffsetSegment = (stream: TokenStream): PathSegment => {
   }
 }
 
-const parseFieldSegment = (stream: TokenStream): PathSegment => {
+const parseFieldSegment = (stream: TokenStream): PathChunkSegment => {
   const dot = stream.nextMatches(TokenName.Dot)
   const word = stream.nextMatches(TokenName.Word)
   return {

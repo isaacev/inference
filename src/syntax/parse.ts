@@ -4,7 +4,7 @@ import {
   Chunk,
   toChunks,
   InlineChunk,
-  Path as PathChunk,
+  PathChunk,
   BlockOpenChunk,
   BlockClauseChunk,
   BlockCloseChunk,
