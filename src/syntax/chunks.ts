@@ -202,16 +202,18 @@ const parseFieldSegment = (stream: TokenStream): PathSegment => {
 const unexpectedToken = (found: Token, ...expected: TokenName[]): never => {
   const name = found.name
   const line = found.location.start.line
+  const column = found.location.start.column
+  const where = `at (${line}:${column})`
 
   if (name === TokenName.Error) {
     const error = found.lexeme
-    throw new Error(`${error} on line ${line}`)
+    throw new Error(`${error} ${where}`)
   }
 
   if (expected.length === 1) {
-    throw new Error(`expected ${expected[0]} but found ${name} on line ${line}`)
+    throw new Error(`expected ${expected[0]} but found ${name} ${where}`)
   }
 
   const list = expected.toLocaleString()
-  throw new Error(`expected one of: ${list} but found ${name} on line ${line}`)
+  throw new Error(`expected one of: ${list} but found ${name} ${where}`)
 }
