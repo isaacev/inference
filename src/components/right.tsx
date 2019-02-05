@@ -1,11 +1,13 @@
 import * as React from 'react'
 import TemplateError from '~/errors'
 import { Constraint } from '~/solver/constraints'
+import Form from '~/components/form'
 import Report from '~/components/report'
+import Type from '~/types'
 
 type Props =
   | { mode: 'error'; error: TemplateError; constraints?: Constraint[] }
-  | { mode: 'okay'; constraints: Constraint[] }
+  | { mode: 'okay'; solution: Type; constraints: Constraint[] }
 
 interface State {
   // empty
@@ -29,6 +31,7 @@ export default class Right extends React.Component<Props, State> {
 
     return (
       <div id="right">
+        <Form type={this.props.solution} />
         <ConstraintTable constraints={this.props.constraints} />
       </div>
     )
@@ -36,12 +39,12 @@ export default class Right extends React.Component<Props, State> {
 }
 
 const ConstraintTable = (props: { constraints: Constraint[] }) => (
-  <table>
+  <table className="constraints-table">
     <thead>
       <tr>
-        <th>Path</th>
-        <th>Atomic Type</th>
-        <th>Origin</th>
+        <th className="paths">Path</th>
+        <th className="types">Type</th>
+        <th className="origins">Origin</th>
       </tr>
     </thead>
     <tbody>

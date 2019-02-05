@@ -49,13 +49,24 @@ main {
   overflow-y: scroll;
 }
 
-#right table {
-  table-layout: fixed;
+.constraints-table {
+  width: 100%;
+  max-width: 800px;
+  margin: 2rem auto;
 
   th,
   td {
     padding: 0.5rem;
     border: 1px solid black;
+  }
+
+  .paths {
+    width: 50%;
+  }
+
+  .types,
+  .origins {
+    width: 25%;
   }
 
   td {
