@@ -18,8 +18,8 @@ export enum TokenName {
   Word = 'Word',
 }
 
-export interface Token {
-  name: TokenName
+export interface Token<T extends TokenName = TokenName> {
+  name: T
   lexeme: string
   location: Span
 }
