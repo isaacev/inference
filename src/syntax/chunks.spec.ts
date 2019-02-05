@@ -103,30 +103,30 @@ describe('identify chunk types', () => {
 })
 
 describe('identify syntax errors', () => {
-  const expectError = (text: string, err: string) => {
-    expect(() => toChunks(text)).toThrow(err)
+  const err = (text: string, msg: string) => {
+    expect(() => toChunks(text)).toThrow(msg)
   }
 
   test('unclosed inline action', () => {
-    expect(() => toChunks('{{>hello')).toThrow('unclosed action')
+    err('{{>hello', 'unclosed action')
   })
 
   test('broken path syntax', () => {
-    expectError('{{>hello $.}}', 'but found RightMeta at (1:12)')
-    expectError('{{>hello $.foo.}}', 'but found RightMeta at (1:16)')
-    expectError('{{>hello $.foo..bar}}', 'but found Dot at (1:16)')
-    expectError('{{>hello $[a]}}', 'but found Word at (1:12)')
-    expectError('{{>hello $[0}}', 'but found RightMeta at (1:13)')
-    expectError('{{>hello $0]}}', 'but found Integer at (1:11)')
-    expectError('{{>hello $[0] }}', 'but found Spaces at (1:14)')
+    err('{{>hello $.}}', 'but found RightMeta at (1:12)')
+    err('{{>hello $.foo.}}', 'but found RightMeta at (1:16)')
+    err('{{>hello $.foo..bar}}', 'but found Dot at (1:16)')
+    err('{{>hello $[a]}}', 'but found Word at (1:12)')
+    err('{{>hello $[0}}', 'but found RightMeta at (1:13)')
+    err('{{>hello $0]}}', 'but found Integer at (1:11)')
+    err('{{>hello $[0] }}', 'but found Spaces at (1:14)')
   })
 
   test('unexpected symbol in action', () => {
-    expect(() => toChunks('{{>hello @}}')).toThrow('unknown symbol')
+    err('{{>hello @}}', 'unknown symbol')
   })
 
   test('unexpected token in action', () => {
-    expect(() => toChunks('{{# foo $}}')).toThrow('but found Spaces')
-    expect(() => toChunks('{{$foo}}')).toThrow('but found Dollar')
+    err('{{# foo $}}', 'but found Spaces at (1:4)')
+    err('{{$foo}}', 'but found Dollar at (1:3)')
   })
 })
