@@ -11,12 +11,44 @@ export type Path =
   | { type: 'root'; location: Span }
   | { type: 'chain'; segments: PathSegment[]; location: Span }
 
+export interface TextChunk {
+  chunk: 'text'
+  text: string
+  location: Span
+}
+
+export interface InlineChunk {
+  chunk: 'inline'
+  name: Word
+  path: Path
+  location: Span
+}
+
+export interface BlockOpenChunk {
+  chunk: 'block-open'
+  name: Word
+  path: Path
+  location: Span
+}
+
+export interface BlockClauseChunk {
+  chunk: 'block-clause'
+  name: Word
+  location: Span
+}
+
+export interface BlockCloseChunk {
+  chunk: 'block-close'
+  name: Word
+  location: Span
+}
+
 export type Chunk =
-  | { chunk: 'text'; text: string; location: Span }
-  | { chunk: 'inline'; name: Word; path: Path; location: Span }
-  | { chunk: 'block-open'; name: Word; path: Path; location: Span }
-  | { chunk: 'block-clause'; name: Word; location: Span }
-  | { chunk: 'block-close'; name: Word; location: Span }
+  | TextChunk
+  | InlineChunk
+  | BlockOpenChunk
+  | BlockClauseChunk
+  | BlockCloseChunk
 
 export const toChunks = (text: string): Chunk[] => {
   const tokens = toTokens(text)
