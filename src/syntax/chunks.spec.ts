@@ -103,8 +103,22 @@ describe('identify chunk types', () => {
 })
 
 describe('identify syntax errors', () => {
+  const expectError = (text: string, err: string) => {
+    expect(() => toChunks(text)).toThrow(err)
+  }
+
   test('unclosed inline action', () => {
     expect(() => toChunks('{{>hello')).toThrow('unclosed action')
+  })
+
+  test('broken path syntax', () => {
+    expectError('{{>hello $.}}', 'but found RightMeta at (1:12)')
+    expectError('{{>hello $.foo.}}', 'but found RightMeta at (1:16)')
+    expectError('{{>hello $.foo..bar}}', 'but found Dot at (1:16)')
+    expectError('{{>hello $[a]}}', 'but found Word at (1:12)')
+    expectError('{{>hello $[0}}', 'but found RightMeta at (1:13)')
+    expectError('{{>hello $0]}}', 'but found Integer at (1:11)')
+    expectError('{{>hello $[0] }}', 'but found Spaces at (1:14)')
   })
 
   test('unexpected symbol in action', () => {
