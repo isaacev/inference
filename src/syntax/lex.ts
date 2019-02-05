@@ -213,7 +213,7 @@ const lexRightMeta: LexFunc = lexer => {
   return lexText
 }
 
-export const lex = (text: string): Token[] => {
+export const toTokens = (text: string): Token[] => {
   let func: LexFunc | null = lexText
   const lexer = new Lexer(text)
   while ((func = func(lexer)) !== null) {}

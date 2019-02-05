@@ -1,5 +1,5 @@
 import { Point } from '~/syntax'
-import { TokenName, lex } from '~/syntax/lex'
+import { TokenName, toTokens } from '~/syntax/lex'
 
 const point = (line: number, column: number, offset: number) => ({
   line,
@@ -11,7 +11,7 @@ const span = (start: Point, end: Point = start) => ({ start, end })
 
 const mapPatternToToken = (symbol: string, name: TokenName) => {
   const text = '{{' + symbol + '}}'
-  expect(lex(text)).toEqual([
+  expect(toTokens(text)).toEqual([
     {
       name: TokenName.LeftMeta,
       lexeme: '{{',
@@ -43,7 +43,7 @@ const mapPatternToToken = (symbol: string, name: TokenName) => {
 
 describe('transitions between text, actions, and EOF', () => {
   test('lex an empty string as a single EOF token', () => {
-    expect(lex('')).toEqual([
+    expect(toTokens('')).toEqual([
       {
         name: TokenName.EOF,
         lexeme: '',
@@ -53,7 +53,7 @@ describe('transitions between text, actions, and EOF', () => {
   })
 
   test('lex a whitespace string to a text token and an EOF token', () => {
-    expect(lex('   ')).toEqual([
+    expect(toTokens('   ')).toEqual([
       {
         name: TokenName.Text,
         lexeme: '   ',
@@ -68,7 +68,7 @@ describe('transitions between text, actions, and EOF', () => {
   })
 
   test('lex a multiline string as a text token and an EOF token', () => {
-    expect(lex('foo\n bar')).toEqual([
+    expect(toTokens('foo\n bar')).toEqual([
       {
         name: TokenName.Text,
         lexeme: 'foo\n bar',
@@ -83,7 +83,7 @@ describe('transitions between text, actions, and EOF', () => {
   })
 
   test('skip text token if action is followed immediately by EOF', () => {
-    expect(lex('a{{}}')).toEqual([
+    expect(toTokens('a{{}}')).toEqual([
       {
         name: TokenName.Text,
         lexeme: 'a',
@@ -108,7 +108,7 @@ describe('transitions between text, actions, and EOF', () => {
   })
 
   test('skip text token if string begins immediately with action', () => {
-    expect(lex('{{}}a')).toEqual([
+    expect(toTokens('{{}}a')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
@@ -135,7 +135,7 @@ describe('transitions between text, actions, and EOF', () => {
 
 describe('identification of patterns inside actions', () => {
   test('mark inline whitespace inside of an action', () => {
-    expect(lex('{{ \t}}')).toEqual([
+    expect(toTokens('{{ \t}}')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
@@ -188,7 +188,7 @@ describe('identification of patterns inside actions', () => {
 
 describe('identification for incorrect patterns inside actions', () => {
   test('report a newline or EOF inside of an action', () => {
-    expect(lex('{{abc')).toEqual([
+    expect(toTokens('{{abc')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
@@ -206,7 +206,7 @@ describe('identification for incorrect patterns inside actions', () => {
       },
     ])
 
-    expect(lex('{{abc\n')).toEqual([
+    expect(toTokens('{{abc\n')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
@@ -226,7 +226,7 @@ describe('identification for incorrect patterns inside actions', () => {
   })
 
   test('report an unsupported symbol inside of an action', () => {
-    expect(lex('{{@}}')).toEqual([
+    expect(toTokens('{{@}}')).toEqual([
       {
         name: TokenName.LeftMeta,
         lexeme: '{{',
