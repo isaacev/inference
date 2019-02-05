@@ -3,7 +3,6 @@ import { Point, Span } from '~/syntax'
 export enum TokenName {
   Dollar = 'Dollar',
   Dot = 'Dot',
-  EOF = 'EOF',
   Error = 'Error',
   Hash = 'Hash',
   Integer = 'Integer',
@@ -109,7 +108,6 @@ const lexText: LexFunc = lexer => {
       if (lexer.distance() > 0) {
         lexer.emit(TokenName.Text)
       }
-      lexer.emit(TokenName.EOF)
       return null
     } else if (lexer.is(LEFT_META)) {
       if (lexer.distance() > 0) {

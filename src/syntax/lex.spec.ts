@@ -33,51 +33,30 @@ const mapPatternToToken = (symbol: string, name: TokenName) => {
         point(1, 5 + symbol.length, 4 + symbol.length)
       ),
     },
-    {
-      name: TokenName.EOF,
-      lexeme: '',
-      location: span(point(1, 5 + symbol.length, 4 + symbol.length)),
-    },
   ])
 }
 
 describe('transitions between text, actions, and EOF', () => {
-  test('lex an empty string as a single EOF token', () => {
-    expect(toTokens('')).toEqual([
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(1, 1, 0)),
-      },
-    ])
+  test('lex an empty string as an empty token array', () => {
+    expect(toTokens('')).toEqual([])
   })
 
-  test('lex a whitespace string to a text token and an EOF token', () => {
+  test('lex a whitespace string to a single text token', () => {
     expect(toTokens('   ')).toEqual([
       {
         name: TokenName.Text,
         lexeme: '   ',
         location: span(point(1, 1, 0), point(1, 4, 3)),
       },
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(1, 4, 3)),
-      },
     ])
   })
 
-  test('lex a multiline string as a text token and an EOF token', () => {
+  test('lex a multiline string as a single text token', () => {
     expect(toTokens('foo\n bar')).toEqual([
       {
         name: TokenName.Text,
         lexeme: 'foo\n bar',
         location: span(point(1, 1, 0), point(2, 5, 8)),
-      },
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(2, 5, 8)),
       },
     ])
   })
@@ -99,11 +78,6 @@ describe('transitions between text, actions, and EOF', () => {
         lexeme: '}}',
         location: span(point(1, 4, 3), point(1, 6, 5)),
       },
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(1, 6, 5)),
-      },
     ])
   })
 
@@ -123,11 +97,6 @@ describe('transitions between text, actions, and EOF', () => {
         name: TokenName.Text,
         lexeme: 'a',
         location: span(point(1, 5, 4), point(1, 6, 5)),
-      },
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(1, 6, 5)),
       },
     ])
   })
@@ -150,11 +119,6 @@ describe('identification of patterns inside actions', () => {
         name: TokenName.RightMeta,
         lexeme: '}}',
         location: span(point(1, 5, 4), point(1, 7, 6)),
-      },
-      {
-        name: TokenName.EOF,
-        lexeme: '',
-        location: span(point(1, 7, 6)),
       },
     ])
   })
