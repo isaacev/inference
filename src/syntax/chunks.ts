@@ -178,56 +178,75 @@ const parseBlockClose: Parser<TokenName.LeftMeta> = (leftMeta, stream) => {
 }
 
 const parsePath = (stream: TokenStream): PathChunk => {
-  const dollar = stream.nextMatches(TokenName.Dollar)
+  if (stream.peekMatches(TokenName.Dot).name === TokenName.Dot) {
+    const dot = stream.nextMatches(TokenName.Dot)
+    return { type: 'root', location: dot.location }
+  }
+
   const segments = [] as PathChunkSegment[]
+  const next = stream.nextMatches(TokenName.Word, TokenName.LeftBracket)
+  switch (next.name) {
+    case TokenName.LeftBracket: {
+      const integer = stream.nextMatches(TokenName.Integer)
+      const rightBracket = stream.nextMatches(TokenName.RightBracket)
+      segments.push({
+        type: 'offset',
+        offset: { text: integer.lexeme, location: integer.location },
+        value: parseInt(integer.lexeme, 10),
+        location: {
+          start: next.location.start,
+          end: rightBracket.location.end,
+        },
+      })
+      break
+    }
+    case TokenName.Word:
+      segments.push({
+        type: 'field',
+        field: { text: next.lexeme, location: next.location },
+        location: next.location,
+      })
+      break
+  }
+
   while (true) {
-    const peek = stream.peekMatches(TokenName.LeftBracket, TokenName.Dot)
+    const peek = stream.peekMatches(TokenName.Dot, TokenName.LeftBracket)
     switch (peek.name) {
-      case TokenName.LeftBracket:
-        segments.push(parseOffsetSegment(stream))
+      case TokenName.LeftBracket: {
+        const leftBracket = stream.nextMatches(TokenName.LeftBracket)
+        const integer = stream.nextMatches(TokenName.Integer)
+        const rightBracket = stream.nextMatches(TokenName.RightBracket)
+        segments.push({
+          type: 'offset',
+          offset: { text: integer.lexeme, location: integer.location },
+          value: parseInt(integer.lexeme, 10),
+          location: {
+            start: leftBracket.location.start,
+            end: rightBracket.location.end,
+          },
+        })
         break
-      case TokenName.Dot:
-        segments.push(parseFieldSegment(stream))
+      }
+      case TokenName.Dot: {
+        const dot = stream.nextMatches(TokenName.Dot)
+        const word = stream.nextMatches(TokenName.Word)
+        segments.push({
+          type: 'field',
+          field: { text: word.lexeme, location: word.location },
+          location: { start: dot.location.start, end: word.location.end },
+        })
         break
+      }
       default:
-        if (segments.length === 0) {
-          return { type: 'root', location: dollar.location }
-        } else {
-          return {
-            type: 'chain',
-            segments: segments,
-            location: {
-              start: dollar.location.start,
-              end: segments[segments.length - 1].location.end,
-            },
-          }
+        return {
+          type: 'chain',
+          segments,
+          location: {
+            start: next.location.start,
+            end: segments[segments.length - 1].location.end,
+          },
         }
     }
-  }
-}
-
-const parseOffsetSegment = (stream: TokenStream): PathChunkSegment => {
-  const leftBracket = stream.nextMatches(TokenName.LeftBracket)
-  const offset = stream.nextMatches(TokenName.Integer)
-  const rightBracket = stream.nextMatches(TokenName.RightBracket)
-  return {
-    type: 'offset',
-    offset: { text: offset.lexeme, location: offset.location },
-    value: parseInt(offset.lexeme, 10),
-    location: {
-      start: leftBracket.location.start,
-      end: rightBracket.location.end,
-    },
-  }
-}
-
-const parseFieldSegment = (stream: TokenStream): PathChunkSegment => {
-  const dot = stream.nextMatches(TokenName.Dot)
-  const word = stream.nextMatches(TokenName.Word)
-  return {
-    type: 'field',
-    field: { text: word.lexeme, location: word.location },
-    location: { start: dot.location.start, end: word.location.end },
   }
 }
 

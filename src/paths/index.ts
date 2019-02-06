@@ -60,7 +60,13 @@ export default class Path {
     if (this.length() === 0) {
       return '.'
     } else {
-      return this.segments.map(s => s.toString()).join('')
+      return this.segments.slice(1).reduce((path, seg) => {
+        if (seg instanceof Field) {
+          return path + '.' + seg.toString()
+        } else {
+          return path + seg.toString()
+        }
+      }, this.segments[0].toString())
     }
   }
 

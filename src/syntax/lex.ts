@@ -2,7 +2,6 @@ import { Point, Span } from '~/syntax'
 
 export enum TokenName {
   Colon = 'Colon',
-  Dollar = 'Dollar',
   Dot = 'Dot',
   Error = 'Error',
   Hash = 'Hash',
@@ -156,10 +155,6 @@ const lexInsideAction: LexFunc = lexer => {
       case ':':
         lexer.advance()
         lexer.emit(TokenName.Colon)
-        break
-      case '$':
-        lexer.advance()
-        lexer.emit(TokenName.Dollar)
         break
       case '#':
         lexer.advance()

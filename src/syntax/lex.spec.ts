@@ -141,7 +141,6 @@ describe('identification of patterns inside actions', () => {
 
   test('identify miscellaneous action symbols', () => {
     mapPatternToToken(':', TokenName.Colon)
-    mapPatternToToken('$', TokenName.Dollar)
     mapPatternToToken('.', TokenName.Dot)
     mapPatternToToken('#', TokenName.Hash)
     mapPatternToToken('[', TokenName.LeftBracket)

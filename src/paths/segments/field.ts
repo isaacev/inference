@@ -17,6 +17,6 @@ export default class Field extends Segment {
   }
 
   public toString() {
-    return '.' + this.name
+    return this.name
   }
 }

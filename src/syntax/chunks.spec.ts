@@ -42,7 +42,7 @@ describe('identify chunk types', () => {
   })
 
   test('inline chunks', () => {
-    expect(toChunks('{{>hello $.world}}')).toEqual([
+    expect(toChunks('{{>hello world}}')).toEqual([
       {
         chunk: 'inline',
         name: toWord('hello'),
@@ -51,7 +51,7 @@ describe('identify chunk types', () => {
       },
     ])
 
-    expect(toChunks('{{>hello $}}')).toEqual([
+    expect(toChunks('{{>hello .}}')).toEqual([
       {
         chunk: 'inline',
         name: toWord('hello'),
@@ -62,7 +62,7 @@ describe('identify chunk types', () => {
   })
 
   test('block opening chunks', () => {
-    expect(toChunks('{{#foo $[0]}}')).toEqual([
+    expect(toChunks('{{#foo [0]}}')).toEqual([
       {
         chunk: 'block-open',
         name: toWord('foo'),
@@ -71,7 +71,43 @@ describe('identify chunk types', () => {
       },
     ])
 
-    expect(toChunks('{{#foo $}}')).toEqual([
+    expect(toChunks('{{#foo [0][123]}}')).toEqual([
+      {
+        chunk: 'block-open',
+        name: toWord('foo'),
+        path: toChain([toOffset(0), toOffset(123)]),
+        location,
+      },
+    ])
+
+    expect(toChunks('{{#foo foo.bar}}')).toEqual([
+      {
+        chunk: 'block-open',
+        name: toWord('foo'),
+        path: toChain([toField('foo'), toField('bar')]),
+        location,
+      },
+    ])
+
+    expect(toChunks('{{#foo foo[0]}}')).toEqual([
+      {
+        chunk: 'block-open',
+        name: toWord('foo'),
+        path: toChain([toField('foo'), toOffset(0)]),
+        location,
+      },
+    ])
+
+    expect(toChunks('{{#foo [0].foo}}')).toEqual([
+      {
+        chunk: 'block-open',
+        name: toWord('foo'),
+        path: toChain([toOffset(0), toField('foo')]),
+        location,
+      },
+    ])
+
+    expect(toChunks('{{#foo .}}')).toEqual([
       {
         chunk: 'block-open',
         name: toWord('foo'),
@@ -112,13 +148,13 @@ describe('identify syntax errors', () => {
   })
 
   test('broken path syntax', () => {
-    err('{{>hello $.}}', 'but found RightMeta at (1:12)')
-    err('{{>hello $.foo.}}', 'but found RightMeta at (1:16)')
-    err('{{>hello $.foo..bar}}', 'but found Dot at (1:16)')
-    err('{{>hello $[a]}}', 'but found Word at (1:12)')
-    err('{{>hello $[0}}', 'but found RightMeta at (1:13)')
-    err('{{>hello $0]}}', 'but found Integer at (1:11)')
-    err('{{>hello $[0] }}', 'but found Spaces at (1:14)')
+    err('{{>hello }}', 'but found RightMeta at (1:10)')
+    err('{{>hello foo.}}', 'but found RightMeta at (1:14)')
+    err('{{>hello foo..bar}}', 'but found Dot at (1:14)')
+    err('{{>hello [a]}}', 'but found Word at (1:11)')
+    err('{{>hello [0}}', 'but found RightMeta at (1:12)')
+    err('{{>hello 0]}}', 'but found Integer at (1:10)')
+    err('{{>hello [0] }}', 'but found Spaces at (1:13)')
   })
 
   test('unexpected symbol in action', () => {
@@ -126,7 +162,7 @@ describe('identify syntax errors', () => {
   })
 
   test('unexpected token in action', () => {
-    err('{{# foo $}}', 'but found Spaces at (1:4)')
-    err('{{$foo}}', 'but found Dollar at (1:3)')
+    err('{{# foo .}}', 'but found Spaces at (1:4)')
+    err('{{.foo}}', 'but found Dot at (1:3)')
   })
 })
