@@ -1,4 +1,4 @@
-import { Location } from '~/parser/grammar'
+import { Span } from '~/syntax'
 import TemplateError from '~/errors'
 import * as report from '~/errors/report'
 import Path from '~/paths'
@@ -8,8 +8,8 @@ import Type from '~/types'
 
 export const typeMismatchError = (params: {
   path: Path
-  original: { type: Type; where: Location }
-  conflict: { type: Type; where: Location }
+  original: { type: Type; where: Span }
+  conflict: { type: Type; where: Span }
   template: string
 }) =>
   new TemplateError({
@@ -36,7 +36,7 @@ export const unsupportedOffsetError = (params: {
   path: Path
   offset: Offset
   type: Type
-  where: Location
+  where: Span
   template: string
 }) =>
   new TemplateError({
@@ -58,8 +58,8 @@ export const unsupportedFieldError = (params: {
   path: Path
   field: Field
   type: Type
-  where: Location
-  original: Location
+  where: Span
+  original: Span
   template: string
 }) =>
   new TemplateError({

@@ -1,5 +1,4 @@
-import { Location } from '~/parser/grammar'
-import { Statement } from '~/parser/tree'
+import { Span, Statement } from '~/syntax'
 import Str from '~/types/str'
 import Num from '~/types/num'
 import Bool from '~/types/bool'
@@ -10,7 +9,7 @@ import Offset from '~/paths/segments/offset'
 export interface Constraint {
   readonly path: Path
   readonly atomicType: Unknown | Str | Num | Bool
-  readonly origin: Location
+  readonly origin: Span
 }
 
 export const toConstraints = (stmts: Statement[], base: Path): Constraint[] => {

@@ -1,7 +1,7 @@
 import { Constraint } from '~/solver/constraints'
 
 // Error tracking and rendering
-import { Location } from '~/parser/grammar'
+import { Span } from '~/syntax'
 import * as errors from '~/solver/errors'
 
 // Paths and segments
@@ -25,10 +25,10 @@ type NodePair<S extends Segment = Segment> = { segment: S; node: Node }
 type LeafType = Str | Num | Bool
 
 type Node =
-  | { mode: 'unknown'; path: Path; because: Location }
-  | { mode: 'leaf'; path: Path; because: Location; type: LeafType }
-  | { mode: 'offset'; path: Path; because: Location; pairs: NodePair<Offset>[] }
-  | { mode: 'field'; path: Path; because: Location; pairs: NodePair<Field>[] }
+  | { mode: 'unknown'; path: Path; because: Span }
+  | { mode: 'leaf'; path: Path; because: Span; type: LeafType }
+  | { mode: 'offset'; path: Path; because: Span; pairs: NodePair<Offset>[] }
+  | { mode: 'field'; path: Path; because: Span; pairs: NodePair<Field>[] }
 
 export const solve = (template: string, constraints: Constraint[]): Type => {
   if (constraints.length === 0) {
