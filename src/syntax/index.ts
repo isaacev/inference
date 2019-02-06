@@ -40,3 +40,5 @@ export interface Clause {
 }
 
 export type Statement = Text | Inline | Block
+
+export { toStatements as parse } from '~/syntax/parse'
