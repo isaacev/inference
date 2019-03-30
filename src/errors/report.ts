@@ -1,9 +1,10 @@
 import Type from '~/types'
-import { Location } from '~/parser/grammar'
+import { Span } from '~/syntax'
 import { sprintf } from '~/errors/utils'
 
 export interface Report {
   title: string
+  where: Span
   parts: ReportPart[]
 }
 
@@ -59,16 +60,16 @@ interface ReportSnippet {
     | { size: 'multi'; lines: [number, number] }
 }
 
-export const errorSnippet = (template: string, where: Location) =>
+export const errorSnippet = (template: string, where: Span) =>
   snippet('error', template, where)
 
-export const helpSnippet = (template: string, where: Location) =>
+export const helpSnippet = (template: string, where: Span) =>
   snippet('help', template, where)
 
 const snippet = (
   mode: ReportSnippet['mode'],
   template: string,
-  where: Location
+  where: Span
 ): ReportSnippet => {
   if (where.start.line === where.end.line) {
     return {

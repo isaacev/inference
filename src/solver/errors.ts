@@ -14,6 +14,7 @@ export const typeMismatchError = (params: {
 }) =>
   new TemplateError({
     title: 'Type mismatch',
+    where: params.conflict.where,
     parts: [
       report.text('`$0` is used on line $1 like this:', [
         params.path.toString(),
@@ -41,6 +42,7 @@ export const unsupportedOffsetError = (params: {
 }) =>
   new TemplateError({
     title: 'Type mismatch',
+    where: params.where,
     parts: [
       report.text(
         'The value `$0` is not a List or Tuple, so has no indices to access:',
@@ -64,6 +66,7 @@ export const unsupportedFieldError = (params: {
 }) =>
   new TemplateError({
     title: 'Type mismatch',
+    where: params.where,
     parts: [
       report.text(
         'The value `$0` is not a Dictionary, so has no fields to access on line $1:',
