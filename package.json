@@ -1,4 +1,10 @@
 {
+  "description": "is it possible to derrive a data model from just a template?",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isaacev/inference"
+  },
   "scripts": {
     "build": "parcel build --out-file index.html --public-url ./ src/index.html",
     "check": "tsc --noEmit",
