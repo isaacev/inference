@@ -23,17 +23,18 @@
     template: [
       { regex: /\}\}/, pop: true, token: 'tag' },
 
+      // Inline keywords
+      { regex: /\>[a-z]+/, token: 'keyword' },
+
       // Block keywords.
       { regex: /[\#\:\/][a-z]+/, token: 'keyword' },
 
-      // Fields
-      { regex: /((\.\w+)+)|\./i, token: 'meta' },
+      // Paths
+      { regex: /\.?[a-z]\w*/i, token: 'string' },
+      { regex: /\[(\*|\d+)\]/, token: 'atom' },
 
       // Types
       { regex: /\w+/, token: 'variable' },
-
-      // Values
-      { regex: /"(?:[^\\"]|\\.)*"?/, token: 'string' },
     ],
   })
 
