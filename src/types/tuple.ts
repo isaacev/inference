@@ -45,7 +45,7 @@ export default class Tuple extends Type {
   }
 
   public toString(): string {
-    return `(${this.members.map(m => m.toString()).join(' ')})`
+    return `Tuple<${this.members.map(m => m.toString()).join(', ')}>`
   }
 }
 

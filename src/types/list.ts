@@ -36,9 +36,9 @@ export default class List extends Type {
 
   public toString(): string {
     if (this.minLength === 0) {
-      return `[${this.element.toString()}]`
+      return `List<${this.element.toString()}>`
     } else {
-      return `[${this.element.toString()}; len >= ${this.minLength}]`
+      return `List<${this.element.toString()}; len >= ${this.minLength}>`
     }
   }
 }
