@@ -14,46 +14,46 @@ export interface Constraint {
 
 export const toConstraints = (stmts: Statement[], base: Path): Constraint[] => {
   const nestedConstraints = stmts.map<Constraint[]>(stmt => {
-    if (stmt.type === 'text') {
+    if (stmt.statement === 'text') {
       return []
     }
 
-    if (stmt.type === 'inline') {
+    if (stmt.statement === 'inline') {
       return [
         {
-          path: base.concat(stmt.field),
+          path: base.concat(stmt.path.value),
           atomicType: new Str(),
-          origin: stmt.where,
+          origin: stmt.path.location,
         },
       ]
     }
 
-    if (stmt.type === 'block' && stmt.name === 'with') {
+    if (stmt.statement === 'block' && stmt.name.value === 'with') {
       return [
         {
-          path: base.concat(stmt.field),
+          path: base.concat(stmt.path.value),
           atomicType: new Unknown(),
-          origin: stmt.where,
+          origin: stmt.path.location,
         },
-        ...toConstraints(stmt.stmts, base.concat(stmt.field)),
+        ...toConstraints(stmt.statements, base.concat(stmt.path.value)),
       ]
     }
 
-    if (stmt.type === 'block' && stmt.name === 'loop') {
+    if (stmt.statement === 'block' && stmt.name.value === 'loop') {
       return [
         {
-          path: base.concat(stmt.field).concat(new Offset()),
+          path: base.concat(stmt.path.value).concat(new Offset()),
           atomicType: new Unknown(),
-          origin: stmt.where,
+          origin: stmt.path.location,
         },
         ...toConstraints(
-          stmt.stmts,
-          base.concat(stmt.field).concat(new Offset())
+          stmt.statements,
+          base.concat(stmt.path.value).concat(new Offset())
         ),
       ]
     }
 
-    throw new Error(`unknown statement of type '${stmt.type}'`)
+    throw new Error(`unknown statement of type '${stmt.statement}'`)
   })
 
   const flattenConstraints = nestedConstraints.reduce((flat, nested) => {
