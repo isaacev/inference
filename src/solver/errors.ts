@@ -28,7 +28,9 @@ export const typeMismatchError = (params: {
         params.path.toString(),
       ]),
       report.helpSnippet(params.template, params.original.where),
-      report.text('Which requires `$0` the type:', [params.path.toString()]),
+      report.text('Which requires `$0` to have the type:', [
+        params.path.toString(),
+      ]),
       report.type(params.original.type),
     ],
   })
