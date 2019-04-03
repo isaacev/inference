@@ -1,5 +1,6 @@
 import { Span } from '~/syntax'
 import { Token, TokenName, toTokens } from '~/syntax/lex'
+import * as errors from '~/syntax/errors'
 
 export type Word = { text: string; location: Span }
 
@@ -52,7 +53,7 @@ export type Chunk =
 
 export const toChunks = (text: string): Chunk[] => {
   const tokens = toTokens(text)
-  const stream = new TokenStream(tokens)
+  const stream = new TokenStream(text, tokens)
   const chunks = [] as Chunk[]
   while (stream.isEmpty() === false) {
     chunks.push(parseChunk(stream))
@@ -65,7 +66,7 @@ type TokenUnion<T> = T extends TokenName ? Token<T> : never
 class TokenStream {
   private pointer = 0
 
-  constructor(private buffer: Token[]) {}
+  constructor(private text: string, private buffer: Token[]) {}
 
   public isEmpty(): boolean {
     return this.pointer >= this.buffer.length
@@ -85,7 +86,7 @@ class TokenStream {
     const next = this.buffer[this.pointer++]
 
     if (oneOf.every(expected => expected !== next.name)) {
-      return unexpectedToken(next, ...oneOf)
+      return unexpectedToken(this.text, next, ...oneOf)
     }
 
     return next as TokenUnion<T>
@@ -250,21 +251,38 @@ const parsePath = (stream: TokenStream): PathChunk => {
   }
 }
 
-const unexpectedToken = (found: Token, ...expected: TokenName[]): never => {
+const unexpectedToken = (
+  text: string,
+  found: Token,
+  ...expected: TokenName[]
+): never => {
   const name = found.name
   const line = found.location.start.line
   const column = found.location.start.column
   const where = `at (${line}:${column})`
 
   if (name === TokenName.Error) {
-    const error = found.lexeme
-    throw new Error(`${error} ${where}`)
+    throw errors.lexicalError({
+      message: found.lexeme,
+      where: found.location,
+      template: text,
+    })
   }
 
   if (expected.length === 1) {
-    throw new Error(`expected ${expected[0]} but found ${name} ${where}`)
+    const message = `expected ${expected[0]} but found ${name} ${where}`
+    throw errors.lexicalError({
+      message,
+      where: found.location,
+      template: text,
+    })
   }
 
   const list = expected.toLocaleString()
-  throw new Error(`expected one of: ${list} but found ${name} ${where}`)
+  const message = `expected one of: ${list} but found ${name} ${where}`
+  throw errors.lexicalError({
+    message,
+    where: found.location,
+    template: text,
+  })
 }

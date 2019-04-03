@@ -88,7 +88,7 @@ class Lexer {
   }
 
   public error(message: string): void {
-    const location = { start: this.pos, end: this.pos }
+    const location = { start: this.pos, end: incrementPoint('', this.pos) }
     this.tokens.push({ name: TokenName.Error, lexeme: message, location })
   }
 }

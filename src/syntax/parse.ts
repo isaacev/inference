@@ -12,6 +12,8 @@ import {
 import Path from '~/paths'
 import Offset from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
+import TemplateError from '~/errors'
+import * as errors from '~/syntax/errors'
 
 export const toStatements = (template: string): Statement[] => {
   const chunks = toChunks(template)
@@ -93,15 +95,21 @@ const parseBlock = (open: BlockOpenChunk, remaining: Chunk[]): Block => {
         : undefined
     const openEnding = open.location.end
     const point = lastClauseEnding || lastStmtEnding || openEnding
-    const where = `at (${point.line}:${point.column})`
-    throw new Error(`unclosed block ${where}`)
+    throw errors.unclosedBlockError({
+      blockName: open.name.text,
+      where: { start: point, end: point },
+      template: '',
+    })
   }
 
   const close = remaining.shift() as BlockCloseChunk
   if (close.name.text !== open.name.text) {
-    const point = close.name.location.start
-    const where = `at (${point.line}:${point.column})`
-    throw new Error(`mismatched closing action ${where}`)
+    throw errors.mismatchedClosingTag({
+      wantedName: open.name.text,
+      foundName: close.name.text,
+      where: close.name.location,
+      template: '',
+    })
   }
 
   const end = close.location.end
