@@ -95,12 +95,12 @@ describe('identify syntax errors', () => {
   }
 
   test('unclosed block', () => {
-    err('{{#hello .}}', 'unclosed block at (1:13)')
-    err('{{#hello .}} world', 'unclosed block at (1:19)')
-    err('{{#hello .}} world {{:else}}', 'unclosed block at (1:29)')
+    err('{{#hello .}}', 'Unclosed block at (1:13)')
+    err('{{#hello .}} world', 'Unclosed block at (1:19)')
+    err('{{#hello .}} world {{:else}}', 'Unclosed block at (1:29)')
   })
 
   test('mismatched closing action', () => {
-    err('{{#foo .}} world {{/fooo}}', 'mismatched closing action at (1:21)')
+    err('{{#foo .}} world {{/fooo}}', 'Mismatched closing tag at (1:21)')
   })
 })

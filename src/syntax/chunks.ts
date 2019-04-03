@@ -256,33 +256,9 @@ const unexpectedToken = (
   found: Token,
   ...expected: TokenName[]
 ): never => {
-  const name = found.name
-  const line = found.location.start.line
-  const column = found.location.start.column
-  const where = `at (${line}:${column})`
-
-  if (name === TokenName.Error) {
-    throw errors.lexicalError({
-      message: found.lexeme,
-      where: found.location,
-      template: text,
-    })
-  }
-
-  if (expected.length === 1) {
-    const message = `expected ${expected[0]} but found ${name} ${where}`
-    throw errors.lexicalError({
-      message,
-      where: found.location,
-      template: text,
-    })
-  }
-
-  const list = expected.toLocaleString()
-  const message = `expected one of: ${list} but found ${name} ${where}`
-  throw errors.lexicalError({
-    message,
-    where: found.location,
+  throw errors.unexpectedTokenError({
+    found,
+    expected,
     template: text,
   })
 }

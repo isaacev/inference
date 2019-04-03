@@ -1,9 +1,9 @@
 import { Point, Span } from '~/syntax'
+import * as errors from '~/syntax/errors'
 
 export enum TokenName {
   Colon = 'Colon',
   Dot = 'Dot',
-  Error = 'Error',
   Hash = 'Hash',
   Integer = 'Integer',
   LeftBracket = 'LeftBracket',
@@ -86,11 +86,6 @@ class Lexer {
     this.start = this.pos
     this.tokens.push({ name, lexeme, location })
   }
-
-  public error(message: string): void {
-    const location = { start: this.pos, end: incrementPoint('', this.pos) }
-    this.tokens.push({ name: TokenName.Error, lexeme: message, location })
-  }
 }
 
 type LexFunc = (lexer: Lexer) => LexFunc | null
@@ -129,8 +124,10 @@ const lexLeftMeta: LexFunc = lexer => {
 const lexInsideAction: LexFunc = lexer => {
   while (true) {
     if (lexer.isDone() || lexer.is('\n')) {
-      lexer.error('unclosed action')
-      return null
+      throw errors.unclosedActionError({
+        where: { start: lexer.pos, end: incrementPoint('', lexer.pos) },
+        template: lexer.text,
+      })
     }
 
     if (lexer.is(RIGHT_META)) {
@@ -181,8 +178,11 @@ const lexInsideAction: LexFunc = lexer => {
         lexer.emit(TokenName.Slash)
         break
       default:
-        lexer.error('unknown symbol')
-        return null
+        throw errors.unexpectedCharacterError({
+          character: char,
+          where: { start: lexer.pos, end: incrementPoint(char, lexer.pos) },
+          template: lexer.text,
+        })
     }
   }
 }

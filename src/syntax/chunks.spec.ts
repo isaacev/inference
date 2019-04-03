@@ -144,25 +144,25 @@ describe('identify syntax errors', () => {
   }
 
   test('unclosed inline action', () => {
-    err('{{>hello', 'unclosed action')
+    err('{{>hello', 'Unclosed action at (1:9)')
   })
 
   test('broken path syntax', () => {
-    err('{{>hello }}', 'but found RightMeta at (1:10)')
-    err('{{>hello foo.}}', 'but found RightMeta at (1:14)')
-    err('{{>hello foo..bar}}', 'but found Dot at (1:14)')
-    err('{{>hello [a]}}', 'but found Word at (1:11)')
-    err('{{>hello [0}}', 'but found RightMeta at (1:12)')
-    err('{{>hello 0]}}', 'but found Integer at (1:10)')
-    err('{{>hello [0] }}', 'but found Spaces at (1:13)')
+    err('{{>hello }}', 'Unexpected token at (1:10)')
+    err('{{>hello foo.}}', 'Unexpected token at (1:14)')
+    err('{{>hello foo..bar}}', 'Unexpected token at (1:14)')
+    err('{{>hello [a]}}', 'Unexpected token at (1:11)')
+    err('{{>hello [0}}', 'Unexpected token at (1:12)')
+    err('{{>hello 0]}}', 'Unexpected token at (1:10)')
+    err('{{>hello [0] }}', 'Unexpected token at (1:13)')
   })
 
   test('unexpected symbol in action', () => {
-    err('{{>hello @}}', 'unknown symbol')
+    err('{{>hello @}}', 'Unexpected character at (1:10)')
   })
 
   test('unexpected token in action', () => {
-    err('{{# foo .}}', 'but found Spaces at (1:4)')
-    err('{{.foo}}', 'but found Dot at (1:3)')
+    err('{{# foo .}}', 'Unexpected token at (1:4)')
+    err('{{.foo}}', 'Unexpected token at (1:3)')
   })
 })

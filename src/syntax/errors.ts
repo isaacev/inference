@@ -1,25 +1,62 @@
 import { Span } from '~/syntax'
+import { Token, TokenName } from '~/syntax/lex'
 import TemplateError from '~/errors'
 import * as report from '~/errors/report'
 
-export const lexicalError = (params: {
-  message: string
+export const unclosedActionError = (params: {
   where: Span
   template: string
-}) => (
-  console.log(JSON.stringify(params.where)),
+}) =>
   new TemplateError({
-    title: 'Lexical error',
+    title: 'Unclosed action',
     where: params.where,
     parts: [
-      report.text(
-        'Unable to parse template because of an unexpected symbol on line $0:',
-        [params.where.start.line.toString()]
-      ),
+      report.text('Action was left unclosed on line $0:', [
+        params.where.start.line.toString(),
+      ]),
       report.errorSnippet(params.template, params.where),
     ],
   })
-)
+
+export const unexpectedCharacterError = (params: {
+  character: string
+  where: Span
+  template: string
+}) =>
+  new TemplateError({
+    title: 'Unexpected character',
+    where: params.where,
+    parts: [
+      report.text('Unexpected character `$0` found on line $1:', [
+        params.character,
+        params.where.start.line.toString(),
+      ]),
+      report.errorSnippet(params.template, params.where),
+    ],
+  })
+
+export const unexpectedTokenError = (params: {
+  found: Token
+  expected: TokenName[]
+  template: string
+}) =>
+  new TemplateError({
+    title: 'Unexpected token',
+    where: params.found.location,
+    parts: [
+      report.text('Unexpected token `$0` found on line $1:', [
+        params.found.name,
+        params.found.location.start.line.toString(),
+      ]),
+      report.errorSnippet(params.template, params.found.location),
+      report.text(
+        params.expected.length === 1
+          ? 'Expected the following token:'
+          : 'Expected one of the following tokens:'
+      ),
+      report.quote(params.expected),
+    ],
+  })
 
 export const unclosedBlockError = (params: {
   blockName: string

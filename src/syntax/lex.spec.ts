@@ -7,7 +7,7 @@ const point = (line: number, column: number, offset: number) => ({
   offset,
 })
 
-const span = (start: Point, end: Point = start) => ({ start, end })
+const span = (start: Point, end: Point) => ({ start, end })
 
 const mapPatternToToken = (symbol: string, name: TokenName) => {
   const text = '{{' + symbol + '}}'
@@ -151,56 +151,16 @@ describe('identification of patterns inside actions', () => {
 })
 
 describe('identification for incorrect patterns inside actions', () => {
-  test('report a newline or EOF inside of an action', () => {
-    expect(toTokens('{{abc')).toEqual([
-      {
-        name: TokenName.LeftMeta,
-        lexeme: '{{',
-        location: span(point(1, 1, 0), point(1, 3, 2)),
-      },
-      {
-        name: TokenName.Word,
-        lexeme: 'abc',
-        location: span(point(1, 3, 2), point(1, 6, 5)),
-      },
-      {
-        name: TokenName.Error,
-        lexeme: 'unclosed action',
-        location: span(point(1, 6, 5)),
-      },
-    ])
+  const err = (text: string, msg: string) => {
+    expect(() => toTokens(text)).toThrow(msg)
+  }
 
-    expect(toTokens('{{abc\n')).toEqual([
-      {
-        name: TokenName.LeftMeta,
-        lexeme: '{{',
-        location: span(point(1, 1, 0), point(1, 3, 2)),
-      },
-      {
-        name: TokenName.Word,
-        lexeme: 'abc',
-        location: span(point(1, 3, 2), point(1, 6, 5)),
-      },
-      {
-        name: TokenName.Error,
-        lexeme: 'unclosed action',
-        location: span(point(1, 6, 5)),
-      },
-    ])
+  test('report a newline or EOF inside of an action', () => {
+    err('{{abc', 'Unclosed action at (1:6)')
+    err('{{abc\n', 'Unclosed action at (1:6)')
   })
 
   test('report an unsupported symbol inside of an action', () => {
-    expect(toTokens('{{@}}')).toEqual([
-      {
-        name: TokenName.LeftMeta,
-        lexeme: '{{',
-        location: span(point(1, 1, 0), point(1, 3, 2)),
-      },
-      {
-        name: TokenName.Error,
-        lexeme: 'unknown symbol',
-        location: span(point(1, 3, 2)),
-      },
-    ])
+    err('{{@}}', 'Unexpected character at (1:3)')
   })
 })
