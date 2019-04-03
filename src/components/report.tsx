@@ -37,6 +37,7 @@ const Part = (props: { part: ReportPart }): JSX.Element => {
       if (props.part.snippet.size === 'single') {
         return (
           <ReportSnippetSingleLine
+            mode={props.part.mode}
             template={props.part.template}
             line={props.part.snippet.line}
             fromColumn={props.part.snippet.columns[0]}
@@ -46,6 +47,7 @@ const Part = (props: { part: ReportPart }): JSX.Element => {
       } else {
         return (
           <ReportSnippetMultiLine
+            mode={props.part.mode}
             template={props.part.template}
             fromLine={props.part.snippet.lines[0]}
             toLine={props.part.snippet.lines[1]}
@@ -79,6 +81,7 @@ const ReportQuote = (props: { lines: string[] }) => {
 }
 
 const ReportSnippetSingleLine = (props: {
+  mode: string
   template: string
   line: number
   fromColumn: number
@@ -97,16 +100,17 @@ const ReportSnippetSingleLine = (props: {
   return (
     <pre className="part-snippet">
       {`${props.line} | ${beforeError}`}
-      <span className="snippet-error">{insideError}</span>
+      <span className={`snippet-${props.mode}`}>{insideError}</span>
       {afterError}
       <br />
       {`${gutterSpaces} | ${columnSpaces}`}
-      <span className="snippet-error">{carets}</span>
+      <span className={`snippet-${props.mode}`}>{carets}</span>
     </pre>
   )
 }
 
 const ReportSnippetMultiLine = (props: {
+  mode: string
   template: string
   fromLine: number
   toLine: number
@@ -127,7 +131,7 @@ const ReportSnippetMultiLine = (props: {
             {lineNum}
             {' '.repeat(maxGutterSpaces - lineNum.toString().length)}
             {` | `}
-            <span className="snippet-error">{fullLine}</span>
+            <span className={`snippet-${props.mode}`}>{fullLine}</span>
             <br />
           </React.Fragment>
         )
