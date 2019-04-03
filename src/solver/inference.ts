@@ -112,6 +112,23 @@ const newBranchNode = (
   }
 }
 
+/**
+ * `extendPath` tries to follow a `Path` through a `Node` tree until the path
+ * has no more segments. If the `Path` has segments that reference parts of the
+ * `Node` tree that do not exist yet but which are semantically valid, build
+ * those nodes as necessary.
+ *
+ * An example of a semantically invalid path would be discovered if the current
+ * `Node` has an `offset` type but the head segment of the past was a `Field`
+ * type. That would indicate that the template is trying to access a field on a
+ * `List` or `Tuple` and an error should be reported.
+ *
+ * @param {string} tmpl - the template in string form (for error reporting)
+ * @param {Path} base - the segments used to reach this node in the tree
+ * @param {Path} rest - the segments yet to be traversed
+ * @param {Constraint} cons - the constraint that initiated this traversal
+ * @param {Node} node - the current `Node` object in the tree traversal
+ */
 const extendPath = (
   tmpl: string,
   base: Path,
@@ -127,6 +144,19 @@ const extendPath = (
   }
 }
 
+/**
+ * `extendLeafNode` is called by the `extendPath` function once all of the
+ * other path segments have been exhausted. This function attaches the `Type`
+ * stored in the `Constraint` to the `Node` tree. If the final node doesn't have
+ * the types `leaf` or `unknown`, that indicates an error and should be reported
+ * as a type mismatch since a composite type (like a `List` or a `Dict`) was
+ * also expected to be a leaf type (like a `Str` or a `Bool`).
+ *
+ * @param {string} tmpl - the template in string for (for error reporting)
+ * @param {Path} base - the segments used to reach this node in the tree
+ * @param {Constraint} cons - the constraint that initiated this traversal
+ * @param {Node} node - the current `Node` object in the tree traversal
+ */
 const extendLeafNode = (
   tmpl: string,
   base: Path,
