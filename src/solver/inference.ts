@@ -22,13 +22,34 @@ import Dict from '~/types/dict'
 
 type NodePair<S extends Segment = Segment> = { segment: S; node: Node }
 
-type LeafType = Str | Num | Bool
+interface UnknownNode {
+  mode: 'unknown'
+  path: Path
+  because: Span
+}
 
-type Node =
-  | { mode: 'unknown'; path: Path; because: Span }
-  | { mode: 'leaf'; path: Path; because: Span; type: LeafType }
-  | { mode: 'offset'; path: Path; because: Span; pairs: NodePair<Offset>[] }
-  | { mode: 'field'; path: Path; because: Span; pairs: NodePair<Field>[] }
+interface LeafNode {
+  mode: 'leaf'
+  path: Path
+  because: Span
+  type: Str | Num | Bool
+}
+
+interface OffsetNode {
+  mode: 'offset'
+  path: Path
+  because: Span
+  pairs: NodePair<Offset>[]
+}
+
+interface FieldNode {
+  mode: 'field'
+  path: Path
+  because: Span
+  pairs: NodePair<Field>[]
+}
+
+type Node = UnknownNode | LeafNode | OffsetNode | FieldNode
 
 export const solve = (template: string, constraints: Constraint[]): Type => {
   if (constraints.length === 0) {
@@ -183,7 +204,7 @@ const extendLeafNode = (
           mode: 'leaf',
           path: base,
           because: node.because,
-          type: node.type.intersect(cons.atomicType) as LeafType,
+          type: node.type.intersect(cons.atomicType) as LeafNode['type'],
         }
       } catch {
         throw errors.typeMismatchError({
@@ -203,144 +224,154 @@ const extendLeafNode = (
   }
 }
 
-const extendBranchNode = (
+type ExtendNode<S extends Segment = Segment> = (
   tmpl: string,
   base: Path,
-  head: Segment,
+  head: S,
   rest: Path,
   cons: Constraint,
   node: Node
-): Node => {
+) => Node
+
+const extendBranchNode: ExtendNode = (tmpl, base, head, rest, cons, node) => {
   if (head instanceof Offset) {
-    switch (node.mode) {
-      case 'unknown':
+    return viaOffset(tmpl, base, head, rest, cons, node)
+  } else if (head instanceof Field) {
+    return viaField(tmpl, base, head, rest, cons, node)
+  } else {
+    throw new Error(`unknown segment type: '${head.toString()}'`)
+  }
+}
+
+const viaOffset: ExtendNode<Offset> = (tmpl, base, head, rest, cons, node) => {
+  switch (node.mode) {
+    case 'unknown':
+      return {
+        mode: 'offset',
+        path: base,
+        because: cons.origin,
+        pairs: [
+          {
+            segment: head,
+            node: newPath(tmpl, base.concat(head), rest, cons),
+          },
+        ],
+      }
+    case 'leaf':
+      throw errors.unsupportedOffsetError({
+        path: node.path,
+        offset: head,
+        type: node.type,
+        where: cons.origin,
+        template: tmpl,
+      })
+    case 'offset': {
+      const matchingPair = node.pairs.find(pair => pair.segment.equalTo(head))
+      if (matchingPair) {
         return {
           mode: 'offset',
           path: base,
-          because: cons.origin,
-          pairs: [
-            {
-              segment: head,
-              node: newPath(tmpl, base.concat(head), rest, cons),
-            },
-          ],
+          because: node.because,
+          pairs: node.pairs.map(pair => {
+            return pair === matchingPair
+              ? {
+                  ...pair,
+                  node: extendPath(
+                    tmpl,
+                    base.concat(head),
+                    rest,
+                    cons,
+                    pair.node
+                  ),
+                }
+              : pair
+          }),
         }
-      case 'leaf':
-        throw errors.unsupportedOffsetError({
-          path: node.path,
-          offset: head,
-          type: node.type,
-          where: cons.origin,
-          template: tmpl,
-        })
-      case 'offset': {
-        const matchingPair = node.pairs.find(pair => pair.segment.equalTo(head))
-        if (matchingPair) {
-          return {
-            mode: 'offset',
-            path: base,
-            because: node.because,
-            pairs: node.pairs.map(pair => {
-              return pair === matchingPair
-                ? {
-                    ...pair,
-                    node: extendPath(
-                      tmpl,
-                      base.concat(head),
-                      rest,
-                      cons,
-                      pair.node
-                    ),
-                  }
-                : pair
-            }),
-          }
-        } else {
-          return {
-            mode: 'offset',
-            path: base,
-            because: node.because,
-            pairs: node.pairs.concat({
-              segment: head,
-              node: newPath(tmpl, base.concat(head), rest, cons),
-            }),
-          }
+      } else {
+        return {
+          mode: 'offset',
+          path: base,
+          because: node.because,
+          pairs: node.pairs.concat({
+            segment: head,
+            node: newPath(tmpl, base.concat(head), rest, cons),
+          }),
         }
       }
-      case 'field':
-        throw errors.unsupportedOffsetError({
-          path: node.path,
-          offset: head,
-          type: derriveType(tmpl, node),
-          where: cons.origin,
-          template: tmpl,
-        })
-      default:
-        throw new Error(`unknown node type: '${(node as any).mode}'`)
     }
-  } else if (head instanceof Field) {
-    switch (node.mode) {
-      case 'unknown':
+    case 'field':
+      throw errors.unsupportedOffsetError({
+        path: node.path,
+        offset: head,
+        type: derriveType(tmpl, node),
+        where: cons.origin,
+        template: tmpl,
+      })
+    default:
+      throw new Error(`unknown node type: '${(node as any).mode}'`)
+  }
+}
+
+const viaField: ExtendNode<Field> = (tmpl, base, head, rest, cons, node) => {
+  switch (node.mode) {
+    case 'unknown':
+      return {
+        mode: 'field',
+        path: base,
+        because: cons.origin,
+        pairs: [
+          {
+            segment: head,
+            node: newPath(tmpl, base.concat(head), rest, cons),
+          },
+        ],
+      }
+    case 'leaf':
+    case 'offset':
+      throw errors.unsupportedFieldError({
+        path: node.path,
+        field: head,
+        type: derriveType(tmpl, node),
+        where: cons.origin,
+        original: node.because,
+        template: tmpl,
+      })
+    case 'field': {
+      const matchingPair = node.pairs.find(pair => pair.segment.equalTo(head))
+      if (matchingPair) {
         return {
           mode: 'field',
           path: base,
-          because: cons.origin,
-          pairs: [
-            {
-              segment: head,
-              node: newPath(tmpl, base.concat(head), rest, cons),
-            },
-          ],
+          because: node.because,
+          pairs: node.pairs.map(pair => {
+            return pair === matchingPair
+              ? {
+                  ...pair,
+                  node: extendPath(
+                    tmpl,
+                    base.concat(head),
+                    rest,
+                    cons,
+                    pair.node
+                  ),
+                }
+              : pair
+          }),
         }
-      case 'leaf':
-      case 'offset':
-        throw errors.unsupportedFieldError({
-          path: node.path,
-          field: head,
-          type: derriveType(tmpl, node),
-          where: cons.origin,
-          original: node.because,
-          template: tmpl,
-        })
-      case 'field': {
-        const matchingPair = node.pairs.find(pair => pair.segment.equalTo(head))
-        if (matchingPair) {
-          return {
-            mode: 'field',
-            path: base,
-            because: node.because,
-            pairs: node.pairs.map(pair => {
-              return pair === matchingPair
-                ? {
-                    ...pair,
-                    node: extendPath(
-                      tmpl,
-                      base.concat(head),
-                      rest,
-                      cons,
-                      pair.node
-                    ),
-                  }
-                : pair
-            }),
-          }
-        } else {
-          return {
-            mode: 'field',
-            path: base,
-            because: node.because,
-            pairs: node.pairs.concat({
-              segment: head,
-              node: newPath(tmpl, base.concat(head), rest, cons),
-            }),
-          }
+      } else {
+        return {
+          mode: 'field',
+          path: base,
+          because: node.because,
+          pairs: node.pairs.concat({
+            segment: head,
+            node: newPath(tmpl, base.concat(head), rest, cons),
+          }),
         }
       }
-      default:
-        throw new Error(`unknown node type: '${(node as any).mode}'`)
     }
-  } else {
-    throw new Error(`unknown segment type: '${head.toString()}'`)
+    default:
+      throw new Error(`unknown node type: '${(node as any).mode}'`)
   }
 }
 
