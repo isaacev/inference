@@ -73,7 +73,7 @@ export const unsupportedFieldError = (params: {
     where: params.where,
     parts: [
       report.text(
-        'The value `$0` is not a Dictionary, so has no fields to access on line $1:',
+        'The value `$0` is not an Object, so has no fields to access on line $1:',
         [params.path.toString(), params.where.start.line.toString()]
       ),
       report.errorSnippet(params.template, params.where),
