@@ -21,7 +21,9 @@ export const typeMismatchError = (params: {
         params.conflict.where.start.line.toString(),
       ]),
       report.errorSnippet(params.template, params.conflict.where),
-      report.text('Which requires `$0` to be:', [params.path.toString()]),
+      report.text('Which requires `$0` to have the type:', [
+        params.path.toString(),
+      ]),
       report.type(params.conflict.type),
       report.text('But on line $0, `$1` is used like this:', [
         params.original.where.start.line.toString(),
