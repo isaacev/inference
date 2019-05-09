@@ -14,7 +14,7 @@ const EXAMPLE = `{{>print posts[0].link}}
 const initialLoad = (savedTemplate: string | null) => {
   ReactDOM.render(
     React.createElement(App, {
-      template: savedTemplate || EXAMPLE,
+      template: EXAMPLE,
       onChange: saveNewTemplate,
     }),
     document.querySelector('#main')
@@ -22,7 +22,7 @@ const initialLoad = (savedTemplate: string | null) => {
 }
 
 const saveNewTemplate = (newTemplate: string) => {
-  localforage.setItem('template', newTemplate)
+  // localforage.setItem('template', newTemplate)
 }
 
 localforage.getItem<string>('template').then(initialLoad)
