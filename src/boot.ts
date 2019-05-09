@@ -3,10 +3,18 @@ import * as ReactDOM from 'react-dom'
 import * as localforage from 'localforage'
 import App from '~/components/app'
 
+const EXAMPLE = `{{>print posts[0].link}}
+
+{{#loop posts}}
+  {{>print text}}
+  {{>print link.url}}
+{{/loop}}
+`
+
 const initialLoad = (savedTemplate: string | null) => {
   ReactDOM.render(
     React.createElement(App, {
-      template: savedTemplate || '',
+      template: savedTemplate || EXAMPLE,
       onChange: saveNewTemplate,
     }),
     document.querySelector('#main')
