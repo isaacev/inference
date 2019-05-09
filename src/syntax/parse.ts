@@ -10,7 +10,7 @@ import {
   BlockCloseChunk,
 } from '~/syntax/chunks'
 import Path from '~/paths'
-import Offset from '~/paths/segments/offset'
+import { StaticOffset } from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
 import TemplateError from '~/errors'
 import * as errors from '~/syntax/errors'
@@ -131,7 +131,7 @@ const parsePath = (syntax: PathChunk): Path => {
       syntax.segments.map(seg => {
         switch (seg.type) {
           case 'offset':
-            return new Offset(seg.value)
+            return new StaticOffset(seg.value)
           case 'field':
             return new Field(seg.field.text)
         }

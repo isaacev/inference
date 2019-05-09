@@ -7,7 +7,7 @@ import * as errors from '~/solver/errors'
 // Paths and segments
 import Path from '~/paths'
 import Segment from '~/paths/segments'
-import Offset from '~/paths/segments/offset'
+import Offset, { StaticOffset, DynamicOffset } from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
 
 // Types
@@ -375,6 +375,10 @@ const viaField: ExtendNode<Field> = (tmpl, base, head, rest, cons, node) => {
   }
 }
 
+const isStaticOffsetPair = (p: NodePair): p is NodePair<StaticOffset> => {
+  return p.segment instanceof StaticOffset
+}
+
 const derriveType = (tmpl: string, node: Node): Type => {
   switch (node.mode) {
     case 'unknown':
@@ -382,15 +386,17 @@ const derriveType = (tmpl: string, node: Node): Type => {
     case 'leaf':
       return node.type
     case 'offset': {
-      const allHaveStaticIndices = node.pairs.every(p => p.segment.hasIndex())
+      const allHaveStaticIndices = node.pairs.every(isStaticOffsetPair)
       const staticIndices = node.pairs
-        .filter(p => p.segment.hasIndex())
-        .map(p => p.segment.offset || 0)
+        .filter(isStaticOffsetPair)
+        .map(p => p.segment.offset)
       const minLength = Math.max(...staticIndices.map(i => i + 1), 0)
 
       if (allHaveStaticIndices) {
         const members = Array.from({ length: minLength }).map((_, i) => {
-          const matchingChild = node.pairs.find(p => p.segment.offset === i)
+          const matchingChild = node.pairs
+            .filter(isStaticOffsetPair)
+            .find(p => p.segment.offset === i)
           if (matchingChild) {
             return derriveType(tmpl, matchingChild.node)
           } else {

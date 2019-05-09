@@ -1,5 +1,5 @@
 import Segment from '~/paths/segments'
-import Offset from '~/paths/segments/offset'
+import { StaticOffset } from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
 
 export default class Path {
@@ -77,7 +77,7 @@ export default class Path {
       return new Path(
         fields.map(f => {
           if (/^\.\d+$/.test(f)) {
-            return new Offset(parseInt(f.slice(1), 10))
+            return new StaticOffset(parseInt(f.slice(1), 10))
           } else {
             return new Field(f.replace(/^\./, ''))
           }

@@ -1,6 +1,6 @@
 import { toStatements } from '~/syntax/parse'
 import Path from '~/paths'
-import Offset from '~/paths/segments/offset'
+import { StaticOffset } from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
 
 const stmt = (text: string, stmts: any[]) => {
@@ -49,7 +49,7 @@ describe('text, inline, and block statements', () => {
   test('parse inline statements', () => {
     stmt('{{>foo .}}', [inline('foo', new Path())])
     stmt('{{>foo foo}}', [inline('foo', new Path([new Field('foo')]))])
-    stmt('{{>foo [0]}}', [inline('foo', new Path([new Offset(0)]))])
+    stmt('{{>foo [0]}}', [inline('foo', new Path([new StaticOffset(0)]))])
   })
 
   test('parse block statement without clauses', () => {
@@ -64,7 +64,7 @@ describe('text, inline, and block statements', () => {
       block('foo', new Path([new Field('foo')]), [text(' hello ')]),
     ])
     stmt('{{#foo [0]}} hello {{/foo}}', [
-      block('foo', new Path([new Offset(0)]), [text(' hello ')]),
+      block('foo', new Path([new StaticOffset(0)]), [text(' hello ')]),
     ])
   })
 

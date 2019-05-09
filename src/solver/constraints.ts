@@ -4,7 +4,7 @@ import Num from '~/types/num'
 import Bool from '~/types/bool'
 import Unknown from '~/types/unknown'
 import Path from '~/paths'
-import Offset from '~/paths/segments/offset'
+import { DynamicOffset } from '~/paths/segments/offset'
 
 export interface Constraint {
   readonly path: Path
@@ -42,13 +42,13 @@ export const toConstraints = (stmts: Statement[], base: Path): Constraint[] => {
     if (stmt.statement === 'block' && stmt.name.value === 'loop') {
       return [
         {
-          path: base.concat(stmt.path.value).concat(new Offset()),
+          path: base.concat(stmt.path.value).concat(new DynamicOffset()),
           atomicType: new Unknown(),
           origin: stmt.path.location,
         },
         ...toConstraints(
           stmt.statements,
-          base.concat(stmt.path.value).concat(new Offset())
+          base.concat(stmt.path.value).concat(new DynamicOffset())
         ),
       ]
     }

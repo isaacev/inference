@@ -7,7 +7,7 @@ import { faMinus } from '@fortawesome/pro-regular-svg-icons/faMinus'
 // App libraries.
 import List from '~/types/list'
 import Path from '~/paths'
-import Offset from '~/paths/segments/offset'
+import { StaticOffset } from '~/paths/segments/offset'
 
 // App components.
 import Any from './any'
@@ -63,7 +63,7 @@ export default class Repeater extends React.Component<Props, State> {
             </button>
           </div>
           {repeat(this.state.count, i => {
-            const path = this.props.path.concat(new Offset(i))
+            const path = this.props.path.concat(new StaticOffset(i))
             const type = this.props.type.element
             return (
               <div className="instance" key={i}>
