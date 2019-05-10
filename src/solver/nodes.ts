@@ -6,7 +6,6 @@ import * as errors from '~/solver/errors'
 
 // Paths and segments
 import Path from '~/paths'
-import Segment from '~/paths/segments'
 import Offset, { StaticOffset, DynamicOffset } from '~/paths/segments/offset'
 import Field from '~/paths/segments/field'
 
@@ -56,12 +55,7 @@ export abstract class Node {
 
   abstract derrive(): Type
 
-  abstract extend(
-    g: Globals,
-    head: Segment | null,
-    rest: Path,
-    cons: Constraint
-  ): Node
+  abstract extend(g: Globals, along: Path, cons: Constraint): Node
 
   static create(g: Globals, path: Path, rest: Path, cons: Constraint): Node {
     const head = rest.head()
@@ -107,10 +101,12 @@ export class UnknownNode extends Node {
     return new Unknown()
   }
 
-  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
+  extend(g: Globals, along: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
+
+    const { head, rest } = along.split()
 
     if (head === null) {
       return new LeafNode(
@@ -173,15 +169,12 @@ class LeafNode extends Node {
     return this.type
   }
 
-  extend(
-    g: Globals,
-    head: Segment | null,
-    _rest: Path,
-    cons: Constraint
-  ): Node {
+  extend(g: Globals, along: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
+
+    const { head } = along.split()
 
     if (head === null) {
       try {
@@ -245,10 +238,12 @@ class ListNode extends Node {
     return new List(this.child.derrive())
   }
 
-  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
+  extend(g: Globals, along: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
+
+    const { head, rest } = along.split()
 
     if (head === null) {
       throw errors.typeMismatchError({
@@ -264,7 +259,7 @@ class ListNode extends Node {
         console.log('length >=', head.offset)
       }
 
-      const newChild = this.child.extend(g, rest.head(), rest.rest(), cons)
+      const newChild = this.child.extend(g, rest, cons)
       return new ListNode(
         this.path,
         this.because,
@@ -313,10 +308,12 @@ class TupleNode extends Node {
     return new Tuple(newMembers)
   }
 
-  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
+  extend(g: Globals, along: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
+
+    const { head, rest } = along.split()
 
     if (head === null) {
       throw errors.typeMismatchError({
@@ -330,7 +327,7 @@ class TupleNode extends Node {
     if (head instanceof StaticOffset) {
       const oldMember = this.members[head.offset] as Node | undefined
       const newMember = oldMember
-        ? oldMember.extend(g, rest.head(), rest.rest(), cons)
+        ? oldMember.extend(g, rest, cons)
         : Node.create(g, this.path.concat(head), rest.rest(), cons)
       const newMembers = { ...this.members, [head.offset]: newMember }
       return new TupleNode(
@@ -383,10 +380,12 @@ class FieldNode extends Node {
     return new Dict(fields)
   }
 
-  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
+  extend(g: Globals, along: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
+
+    const { head, rest } = along.split()
 
     if (head === null) {
       throw errors.typeMismatchError({
@@ -413,7 +412,7 @@ class FieldNode extends Node {
           if (p.segment.equalTo(head)) {
             return {
               segment: head,
-              node: p.node.extend(g, rest.head(), rest.rest(), cons),
+              node: p.node.extend(g, rest, cons),
             }
           } else {
             return p

@@ -39,7 +39,7 @@ const attemptToSolve = (globals: Globals, constraints: Constraint[]): Type => {
     constraints[0]
   )
   for (const cons of constraints.slice(1)) {
-    root = root.extend(globals, cons.path.head(), cons.path.rest(), cons)
+    root = root.extend(globals, cons.path, cons)
   }
 
   return root.derrive()

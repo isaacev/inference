@@ -21,6 +21,10 @@ export default class Path {
     return new Path(this.segments.slice(1))
   }
 
+  public split(): { head: Segment | null; rest: Path } {
+    return { head: this.head(), rest: this.rest() }
+  }
+
   public tail(): Segment | null {
     if (this.length() === 0) {
       return null
