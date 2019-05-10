@@ -1,46 +1,45 @@
-import Unknown from '~/types/unknown'
-import { Globals, Node, AssumptionError, Lessons } from '~/solver/nodes'
-import Path from '~/paths'
-import { Constraint } from '~/solver/constraints'
+import { Lessons, AssumptionRollback } from './assumptions'
+import { Node, EmptyNode } from '~/solver/nodes'
+import { Constraint } from './constraints'
 import Type from '~/types'
 
-const MAX_ATTEMPTS = 100
+export class Snapshot {
+  constructor(public root: Node, public constraints: Constraint[]) {}
 
-export const solve = (template: string, constraints: Constraint[]): Type => {
-  if (constraints.length === 0) {
-    return new Unknown()
+  continue() {
+    return this.constraints.length > 0
   }
 
+  next(template: string, lessons: Lessons): Snapshot {
+    if (this.constraints.length === 0) {
+      return this
+    }
+
+    const g = { template, lessons, previousSnapshot: this }
+    const [c, ...cs] = this.constraints
+    return new Snapshot(this.root.extend(g, c.path, c), cs)
+  }
+}
+
+export const solve = (template: string, constraints: Constraint[]): Type => {
+  console.time('solve')
   const lessons = new Lessons()
-  const globals: Globals = { template, lessons }
 
-  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+  let snapshot = new Snapshot(new EmptyNode(), constraints)
+  while (snapshot.continue()) {
     try {
-      return attemptToSolve(globals, constraints)
+      snapshot = snapshot.next(template, lessons)
     } catch (err) {
-      if (err instanceof AssumptionError) {
-        const { path, shouldBe } = err
-        lessons.addLesson(path, shouldBe)
-        continue
+      if (err instanceof AssumptionRollback) {
+        lessons.add(err.lesson)
+        snapshot = err.previousSnapshot
+      } else {
+        console.timeEnd('solve')
+        throw err
       }
-
-      throw err
     }
   }
 
-  throw new Error(`unable to solve after ${MAX_ATTEMPTS} attempts`)
-}
-
-const attemptToSolve = (globals: Globals, constraints: Constraint[]): Type => {
-  let root = Node.create(
-    globals,
-    new Path(),
-    constraints[0].path,
-    constraints[0]
-  )
-  for (const cons of constraints.slice(1)) {
-    root = root.extend(globals, cons.path, cons)
-  }
-
-  return root.derrive()
+  console.timeEnd('solve')
+  return snapshot.root.derrive()
 }

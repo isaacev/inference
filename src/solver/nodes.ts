@@ -19,29 +19,14 @@ import Tuple from '~/types/tuple'
 import List from '~/types/list'
 import Dict from '~/types/dict'
 
-export class Lessons {
-  private table: { [path: string]: typeof Type } = {}
+// Assumption management
+import { Lessons, AssumptionBookmark } from './assumptions'
+import { Snapshot } from './inference'
 
-  public addLesson(path: Path, shouldBe: typeof Type) {
-    this.table[path.toString()] = shouldBe
-  }
-
-  public hasLesson(path: Path) {
-    return this.table.hasOwnProperty(path.toString())
-  }
-
-  public getLesson(path: Path): typeof Type | undefined {
-    return this.table[path.toString()]
-  }
-}
-
-export class AssumptionError {
-  constructor(public path: Path, public shouldBe: typeof Type) {}
-}
-
-export interface Globals {
+interface Globals {
   template: string
   lessons: Lessons
+  previousSnapshot: Snapshot
 }
 
 export abstract class Node {
@@ -71,13 +56,16 @@ export abstract class Node {
     const nextNode = Node.create(g, path.concat(head), rest.rest(), cons)
 
     if (head instanceof Offset) {
-      const lesson = g.lessons.getLesson(path)
-      if (head instanceof DynamicOffset || lesson === List) {
+      if (head instanceof DynamicOffset || g.lessons.shouldBe(path, List)) {
         return new ListNode(path, cons.origin, [cons], nextNode)
       } else if (head instanceof StaticOffset) {
-        return new TupleNode(path, cons.origin, [cons], {
-          [head.offset]: nextNode,
-        })
+        return new TupleNode(
+          path,
+          cons.origin,
+          [cons],
+          { [head.offset]: nextNode },
+          new AssumptionBookmark(g.previousSnapshot, path)
+        )
       }
     }
 
@@ -94,7 +82,7 @@ export abstract class Node {
   }
 }
 
-export class UnknownNode extends Node {
+class UnknownNode extends Node {
   public readonly kind = 'unknown'
 
   derrive() {
@@ -120,8 +108,8 @@ export class UnknownNode extends Node {
     const nextNode = Node.create(g, this.path.concat(head), rest.rest(), cons)
 
     if (head instanceof Offset) {
-      const lesson = g.lessons.getLesson(this.path)
-      if (head instanceof DynamicOffset || lesson === List) {
+      const shouldBeList = g.lessons.shouldBe(this.path, List)
+      if (head instanceof DynamicOffset || shouldBeList) {
         return new ListNode(
           this.path,
           cons.origin,
@@ -133,9 +121,8 @@ export class UnknownNode extends Node {
           this.path,
           cons.origin,
           this.constraints.concat(cons),
-          {
-            [head.offset]: nextNode,
-          }
+          { [head.offset]: nextNode },
+          new AssumptionBookmark(g.previousSnapshot, this.path)
         )
       }
     }
@@ -150,6 +137,29 @@ export class UnknownNode extends Node {
     }
 
     throw new Error(`unknown segment type: '${head.toString()}'`)
+  }
+}
+
+export class EmptyNode extends Node {
+  public readonly kind = 'empty'
+
+  constructor() {
+    super(
+      new Path(),
+      {
+        start: { line: 1, column: 1, offset: 0 },
+        end: { line: 1, column: 1, offset: 0 },
+      },
+      []
+    )
+  }
+
+  derrive() {
+    return new Unknown()
+  }
+
+  extend(g: Globals, along: Path, cons: Constraint): Node {
+    return Node.create(g, this.path, along, cons)
   }
 }
 
@@ -286,15 +296,18 @@ class ListNode extends Node {
 class TupleNode extends Node {
   public readonly kind = 'tuple'
   public readonly members: { [offset: number]: Node }
+  public readonly bookmark: AssumptionBookmark
 
   constructor(
     path: Path,
     because: Span,
     constraints: Constraint[],
-    members: TupleNode['members']
+    members: TupleNode['members'],
+    bookmark: AssumptionBookmark
   ) {
     super(path, because, constraints)
     this.members = members
+    this.bookmark = bookmark
   }
 
   derrive(): Type {
@@ -328,16 +341,17 @@ class TupleNode extends Node {
       const oldMember = this.members[head.offset] as Node | undefined
       const newMember = oldMember
         ? oldMember.extend(g, rest, cons)
-        : Node.create(g, this.path.concat(head), rest.rest(), cons)
+        : Node.create(g, this.path.concat(head), rest, cons)
       const newMembers = { ...this.members, [head.offset]: newMember }
       return new TupleNode(
         this.path,
         this.because,
         this.constraints.concat(cons),
-        newMembers
+        newMembers,
+        this.bookmark
       )
     } else if (head instanceof DynamicOffset) {
-      throw new AssumptionError(this.path, List)
+      return this.bookmark.rollback(List)
     }
 
     if (head instanceof Field) {
