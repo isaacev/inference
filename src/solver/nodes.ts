@@ -57,18 +57,13 @@ export abstract class Node {
   abstract derrive(): Type
 
   abstract extend(
-    globals: Globals,
+    g: Globals,
     head: Segment | null,
     rest: Path,
     cons: Constraint
   ): Node
 
-  static create(
-    globals: Globals,
-    path: Path,
-    rest: Path,
-    cons: Constraint
-  ): Node {
+  static create(g: Globals, path: Path, rest: Path, cons: Constraint): Node {
     const head = rest.head()
 
     if (head === null) {
@@ -79,10 +74,10 @@ export abstract class Node {
       }
     }
 
-    const nextNode = Node.create(globals, path.concat(head), rest.rest(), cons)
+    const nextNode = Node.create(g, path.concat(head), rest.rest(), cons)
 
     if (head instanceof Offset) {
-      const lesson = globals.lessons.getLesson(path)
+      const lesson = g.lessons.getLesson(path)
       if (head instanceof DynamicOffset || lesson === List) {
         return new ListNode(path, cons.origin, [cons], nextNode)
       } else if (head instanceof StaticOffset) {
@@ -112,12 +107,7 @@ export class UnknownNode extends Node {
     return new Unknown()
   }
 
-  extend(
-    globals: Globals,
-    head: Segment | null,
-    rest: Path,
-    cons: Constraint
-  ): Node {
+  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
@@ -131,15 +121,10 @@ export class UnknownNode extends Node {
       )
     }
 
-    const nextNode = Node.create(
-      globals,
-      this.path.concat(head),
-      rest.rest(),
-      cons
-    )
+    const nextNode = Node.create(g, this.path.concat(head), rest.rest(), cons)
 
     if (head instanceof Offset) {
-      const lesson = globals.lessons.getLesson(this.path)
+      const lesson = g.lessons.getLesson(this.path)
       if (head instanceof DynamicOffset || lesson === List) {
         return new ListNode(
           this.path,
@@ -189,7 +174,7 @@ class LeafNode extends Node {
   }
 
   extend(
-    globals: Globals,
+    g: Globals,
     head: Segment | null,
     _rest: Path,
     cons: Constraint
@@ -212,7 +197,7 @@ class LeafNode extends Node {
           path: this.path,
           original: { type: this.type, where: this.because },
           conflict: { type: cons.atomicType, where: cons.origin },
-          template: globals.template,
+          template: g.template,
         })
       }
     }
@@ -223,7 +208,7 @@ class LeafNode extends Node {
         offset: head,
         type: this.type,
         where: cons.origin,
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -234,7 +219,7 @@ class LeafNode extends Node {
         type: this.type,
         where: cons.origin,
         original: this.because,
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -262,7 +247,7 @@ class LeafNode extends Node {
 //     throw new Error('not implemented yet')
 //   }
 
-//   extend(globals: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
+//   extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
 //     throw new Error('not implemented yet')
 //   }
 // }
@@ -285,12 +270,7 @@ class ListNode extends Node {
     return new List(this.child.derrive())
   }
 
-  extend(
-    globals: Globals,
-    head: Segment | null,
-    rest: Path,
-    cons: Constraint
-  ): Node {
+  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
@@ -300,7 +280,7 @@ class ListNode extends Node {
         path: this.path,
         original: { type: this.derrive(), where: this.because },
         conflict: { type: cons.atomicType, where: cons.origin },
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -309,12 +289,7 @@ class ListNode extends Node {
         console.log('length >=', head.offset)
       }
 
-      const newChild = this.child.extend(
-        globals,
-        rest.head(),
-        rest.rest(),
-        cons
-      )
+      const newChild = this.child.extend(g, rest.head(), rest.rest(), cons)
       return new ListNode(
         this.path,
         this.because,
@@ -330,7 +305,7 @@ class ListNode extends Node {
         type: this.derrive(),
         where: cons.origin,
         original: this.because,
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -363,12 +338,7 @@ class TupleNode extends Node {
     return new Tuple(newMembers)
   }
 
-  extend(
-    globals: Globals,
-    head: Segment | null,
-    rest: Path,
-    cons: Constraint
-  ): Node {
+  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
@@ -378,15 +348,15 @@ class TupleNode extends Node {
         path: this.path,
         original: { type: this.derrive(), where: this.because },
         conflict: { type: cons.atomicType, where: cons.origin },
-        template: globals.template,
+        template: g.template,
       })
     }
 
     if (head instanceof StaticOffset) {
       const oldMember = this.members[head.offset] as Node | undefined
       const newMember = oldMember
-        ? oldMember.extend(globals, rest.head(), rest.rest(), cons)
-        : Node.create(globals, this.path.concat(head), rest.rest(), cons)
+        ? oldMember.extend(g, rest.head(), rest.rest(), cons)
+        : Node.create(g, this.path.concat(head), rest.rest(), cons)
       const newMembers = { ...this.members, [head.offset]: newMember }
       return new TupleNode(
         this.path,
@@ -405,7 +375,7 @@ class TupleNode extends Node {
         type: this.derrive(),
         where: cons.origin,
         original: this.because,
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -438,12 +408,7 @@ class FieldNode extends Node {
     return new Dict(fields)
   }
 
-  extend(
-    globals: Globals,
-    head: Segment | null,
-    rest: Path,
-    cons: Constraint
-  ): Node {
+  extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
     if (cons.atomicType instanceof Unknown) {
       return this
     }
@@ -453,7 +418,7 @@ class FieldNode extends Node {
         path: this.path,
         original: { type: this.derrive(), where: this.because },
         conflict: { type: cons.atomicType, where: cons.origin },
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -463,7 +428,7 @@ class FieldNode extends Node {
         offset: head,
         type: this.derrive(),
         where: cons.origin,
-        template: globals.template,
+        template: g.template,
       })
     }
 
@@ -473,7 +438,7 @@ class FieldNode extends Node {
           if (p.segment.equalTo(head)) {
             return {
               segment: head,
-              node: p.node.extend(globals, rest.head(), rest.rest(), cons),
+              node: p.node.extend(g, rest.head(), rest.rest(), cons),
             }
           } else {
             return p
@@ -489,7 +454,7 @@ class FieldNode extends Node {
       } else {
         const newPair = {
           segment: head,
-          node: Node.create(globals, this.path.concat(head), rest.rest(), cons),
+          node: Node.create(g, this.path.concat(head), rest.rest(), cons),
         }
 
         const updatedPairs = this.pairs.concat(newPair)
