@@ -227,31 +227,6 @@ class LeafNode extends Node {
   }
 }
 
-// class OffsetNode extends Node {
-//   public readonly kind = 'offset'
-//   public readonly pairs: { segment: Offset; node: Node }[]
-//   private readonly mode: 'tuple' | 'list'
-
-//   constructor(
-//     path: Path,
-//     because: Span,
-//     constraints: Constraint[],
-//     pairs: OffsetNode['pairs']
-//   ) {
-//     super(path, because, constraints)
-//     this.pairs = pairs
-//     this.mode = pairs.every(p => p.segment.hasIndex()) ? 'tuple' : 'list'
-//   }
-
-//   derrive(): Type {
-//     throw new Error('not implemented yet')
-//   }
-
-//   extend(g: Globals, head: Segment | null, rest: Path, cons: Constraint): Node {
-//     throw new Error('not implemented yet')
-//   }
-// }
-
 class ListNode extends Node {
   public readonly kind = 'list'
   public readonly child: Node
