@@ -1,10 +1,11 @@
 import Type from '~/types'
 import { Span } from '~/syntax'
 import { sprintf } from '~/errors/utils'
+import { ContextTrace } from '~/solver/constraints'
 
 export interface Report {
   title: string
-  where: Span
+  trace: ContextTrace
   parts: ReportPart[]
 }
 
@@ -14,6 +15,7 @@ export type ReportPart =
   | ReportType
   | ReportQuote
   | ReportSnippet
+  | ReportTrace
 
 interface ReportEmpty {
   form: 'empty'
@@ -51,46 +53,76 @@ export const quote = (lines: string[]): ReportQuote => {
   return { form: 'quote', lines }
 }
 
+export interface SingleLineSnippet {
+  size: 'single'
+  line: number
+  columns: [number, number]
+}
+
+export interface MultiLineSnippet {
+  size: 'multi'
+  lines: [number, number]
+}
+
 interface ReportSnippet {
   form: 'snippet'
   mode: 'error' | 'help'
   template: string
-  snippet:
-    | { size: 'single'; line: number; columns: [number, number] }
-    | { size: 'multi'; lines: [number, number] }
+  snippet: SingleLineSnippet | MultiLineSnippet
 }
 
-export const errorSnippet = (template: string, where: Span) =>
-  snippet('error', template, where)
+export const errorSnippet = (template: string, where: Span): ReportSnippet => ({
+  form: 'snippet',
+  mode: 'error',
+  template,
+  snippet: spanToSnippet(where),
+})
 
-export const helpSnippet = (template: string, where: Span) =>
-  snippet('help', template, where)
+export const helpSnippet = (template: string, where: Span): ReportSnippet => ({
+  form: 'snippet',
+  mode: 'help',
+  template,
+  snippet: spanToSnippet(where),
+})
 
-const snippet = (
-  mode: ReportSnippet['mode'],
-  template: string,
-  where: Span
-): ReportSnippet => {
+const spanToSnippet = (where: Span): SingleLineSnippet | MultiLineSnippet => {
   if (where.start.line === where.end.line) {
     return {
-      form: 'snippet',
-      mode,
-      template,
-      snippet: {
-        size: 'single',
-        line: where.start.line,
-        columns: [where.start.column, where.end.column],
-      },
+      size: 'single',
+      line: where.start.line,
+      columns: [where.start.column, where.end.column],
     }
   } else {
     return {
-      form: 'snippet',
-      mode,
-      template,
-      snippet: {
-        size: 'multi',
-        lines: [where.start.line, where.end.line],
-      },
+      size: 'multi',
+      lines: [where.start.line, where.end.line],
     }
+  }
+}
+
+interface ReportTrace {
+  form: 'trace'
+  mode: string
+  template: string
+  steps: (SingleLineSnippet | MultiLineSnippet)[]
+}
+
+export const trace = (
+  template: string,
+  mode: string,
+  trace: ContextTrace
+): ReportTrace => {
+  const steps: ReportTrace['steps'] = []
+  let nextStep: ContextTrace | null = trace
+  while (nextStep !== null) {
+    steps.unshift(spanToSnippet(nextStep.location))
+    nextStep = nextStep.parent
+  }
+
+  return {
+    form: 'trace',
+    mode,
+    template,
+    steps,
   }
 }

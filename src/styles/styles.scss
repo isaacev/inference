@@ -123,6 +123,7 @@ main {
   // TODO
 }
 
+.part-trace,
 .part-snippet {
   margin: 1rem 0;
   padding: 1rem;
@@ -133,6 +134,11 @@ main {
   font-family: 'Dank Mono', monospace;
   font-size: 1.2rem;
   line-height: 1;
+
+  .snippet-bold {
+    font-weight: bold;
+    color: #555;
+  }
 
   .snippet-error {
     font-weight: bold;

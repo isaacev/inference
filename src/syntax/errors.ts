@@ -9,7 +9,7 @@ export const unclosedActionError = (params: {
 }) =>
   new TemplateError({
     title: 'Unclosed action',
-    where: params.where,
+    trace: { location: params.where, parent: null },
     parts: [
       report.text('Action was left unclosed on line $0:', [
         params.where.start.line.toString(),
@@ -25,7 +25,7 @@ export const unexpectedCharacterError = (params: {
 }) =>
   new TemplateError({
     title: 'Unexpected character',
-    where: params.where,
+    trace: { location: params.where, parent: null },
     parts: [
       report.text('Unexpected character `$0` found on line $1:', [
         params.character,
@@ -42,7 +42,7 @@ export const unexpectedTokenError = (params: {
 }) =>
   new TemplateError({
     title: 'Unexpected token',
-    where: params.found.location,
+    trace: { location: params.found.location, parent: null },
     parts: [
       report.text('Unexpected token `$0` found on line $1:', [
         params.found.name,
@@ -65,7 +65,7 @@ export const unclosedBlockError = (params: {
 }) =>
   new TemplateError({
     title: 'Unclosed block',
-    where: params.where,
+    trace: { location: params.where, parent: null },
     parts: [
       // TODO
     ],
@@ -79,7 +79,7 @@ export const mismatchedClosingTag = (params: {
 }) =>
   new TemplateError({
     title: 'Mismatched closing tag',
-    where: params.where,
+    trace: { location: params.where, parent: null },
     parts: [
       // TODO
     ],

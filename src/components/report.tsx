@@ -1,5 +1,9 @@
 import * as React from 'react'
-import { ReportPart } from '~/errors/report'
+import {
+  ReportPart,
+  SingleLineSnippet,
+  MultiLineSnippet,
+} from '~/errors/report'
 import Type from '~/types'
 import { tokenize } from '~/errors/utils'
 
@@ -54,6 +58,14 @@ const Part = (props: { part: ReportPart }): JSX.Element => {
           />
         )
       }
+    case 'trace':
+      return (
+        <ReportTrace
+          template={props.part.template}
+          mode={props.part.mode}
+          steps={props.part.steps}
+        />
+      )
   }
 }
 
@@ -133,6 +145,86 @@ const ReportSnippetMultiLine = (props: {
             {` | `}
             <span className={`snippet-${props.mode}`}>{fullLine}</span>
             <br />
+          </React.Fragment>
+        )
+      })}
+    </pre>
+  )
+}
+
+const Snippet = (props: {
+  template: string
+  mode: string
+  snippet: SingleLineSnippet | MultiLineSnippet
+}) => {
+  if (props.snippet.size === 'single') {
+    const line = props.snippet.line
+    const [fromColumn, toColumn] = props.snippet.columns
+    const fullLine = props.template.split('\n')[line - 1]
+    const beforeError = fullLine.slice(0, fromColumn - 1)
+    const insideError = fullLine.slice(fromColumn - 1, toColumn - 1)
+    const afterError = fullLine.slice(toColumn - 1)
+    const totalGutterSpaces = line.toString().length
+    const gutterSpaces = ' '.repeat(totalGutterSpaces)
+    const totalColumnSpaces = fromColumn - 1
+    const columnSpaces = ' '.repeat(totalColumnSpaces)
+    const totalCarets = Math.max(1, toColumn - fromColumn)
+    const carets = '^'.repeat(totalCarets)
+    return (
+      <React.Fragment>
+        {`${line} | ${beforeError}`}
+        <span className={`snippet-${props.mode}`}>{insideError}</span>
+        {afterError}
+        <br />
+        {`${gutterSpaces} | ${columnSpaces}`}
+        <span className={`snippet-${props.mode}`}>{carets}</span>
+      </React.Fragment>
+    )
+  } else {
+    const {
+      lines: [fromLine, toLine],
+    } = props.snippet
+    const fullLines = props.template.split('\n').slice(fromLine - 1, toLine)
+    const maxGutterSpaces = Math.max(
+      fromLine.toString().length,
+      toLine.toString().length
+    )
+    return (
+      <pre className="part-snippet">
+        {fullLines.map((fullLine, i) => {
+          const lineNum = fromLine + i
+          return (
+            <React.Fragment key={i}>
+              {lineNum}
+              {' '.repeat(maxGutterSpaces - lineNum.toString().length)}
+              {` | `}
+              <span className={`snippet-${props.mode}`}>{fullLine}</span>
+              <br />
+            </React.Fragment>
+          )
+        })}
+      </pre>
+    )
+  }
+}
+
+const ReportTrace = (props: {
+  template: string
+  mode: string
+  steps: (SingleLineSnippet | MultiLineSnippet)[]
+}) => {
+  return (
+    <pre className="part-trace">
+      {props.steps.map((step, index, all) => {
+        const isLastStep = all.length - 1 === index
+        return (
+          <React.Fragment key={index}>
+            <Snippet
+              template={props.template}
+              mode={isLastStep ? props.mode : 'bold'}
+              snippet={step}
+            />
+            {isLastStep ? null : <br />}
           </React.Fragment>
         )
       })}

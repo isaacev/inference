@@ -1,4 +1,4 @@
-import { Constraint } from '~/solver/constraints'
+import { Constraint, ContextTrace } from '~/solver/constraints'
 
 // Error tracking and rendering
 import { Span } from '~/syntax'
@@ -34,7 +34,7 @@ export abstract class Node {
 
   constructor(
     public path: Path,
-    public because: Span,
+    public because: ContextTrace,
     public constraints: Constraint[]
   ) {}
 
@@ -47,9 +47,9 @@ export abstract class Node {
 
     if (head === null) {
       if (cons.atomicType instanceof Unknown) {
-        return new UnknownNode(path, cons.origin, [cons])
+        return new UnknownNode(path, cons.trace, [cons])
       } else {
-        return new LeafNode(path, cons.origin, [cons], cons.atomicType)
+        return new LeafNode(path, cons.trace, [cons], cons.atomicType)
       }
     }
 
@@ -57,11 +57,11 @@ export abstract class Node {
 
     if (head instanceof Offset) {
       if (head instanceof DynamicOffset || g.lessons.shouldBe(path, List)) {
-        return new ListNode(path, cons.origin, [cons], nextNode)
+        return new ListNode(path, cons.trace, [cons], nextNode)
       } else if (head instanceof StaticOffset) {
         return new TupleNode(
           path,
-          cons.origin,
+          cons.trace,
           [cons],
           { [head.offset]: nextNode },
           new AssumptionBookmark(g.previousSnapshot, path)
@@ -72,7 +72,7 @@ export abstract class Node {
     if (head instanceof Field) {
       return new FieldNode(
         path,
-        cons.origin,
+        cons.trace,
         [cons],
         [{ segment: head, node: nextNode }]
       )
@@ -99,7 +99,7 @@ class UnknownNode extends Node {
     if (head === null) {
       return new LeafNode(
         this.path,
-        cons.origin,
+        cons.trace,
         this.constraints.concat(cons),
         cons.atomicType
       )
@@ -112,14 +112,14 @@ class UnknownNode extends Node {
       if (head instanceof DynamicOffset || shouldBeList) {
         return new ListNode(
           this.path,
-          cons.origin,
+          cons.trace,
           this.constraints.concat(cons),
           nextNode
         )
       } else if (head instanceof StaticOffset) {
         return new TupleNode(
           this.path,
-          cons.origin,
+          cons.trace,
           this.constraints.concat(cons),
           { [head.offset]: nextNode },
           new AssumptionBookmark(g.previousSnapshot, this.path)
@@ -130,7 +130,7 @@ class UnknownNode extends Node {
     if (head instanceof Field) {
       return new FieldNode(
         this.path,
-        cons.origin,
+        cons.trace,
         this.constraints.concat(cons),
         [{ segment: head, node: nextNode }]
       )
@@ -147,8 +147,11 @@ export class EmptyNode extends Node {
     super(
       new Path(),
       {
-        start: { line: 1, column: 1, offset: 0 },
-        end: { line: 1, column: 1, offset: 0 },
+        location: {
+          start: { line: 1, column: 1, offset: 0 },
+          end: { line: 1, column: 1, offset: 0 },
+        },
+        parent: null,
       },
       []
     )
@@ -168,7 +171,7 @@ class LeafNode extends Node {
 
   constructor(
     path: Path,
-    because: Span,
+    because: ContextTrace,
     constraints: Constraint[],
     public type: Str | Num | Bool
   ) {
@@ -199,7 +202,7 @@ class LeafNode extends Node {
         throw errors.typeMismatchError({
           path: this.path,
           original: { type: this.type, where: this.because },
-          conflict: { type: cons.atomicType, where: cons.origin },
+          conflict: { type: cons.atomicType, where: cons.trace },
           template: g.template,
         })
       }
@@ -210,7 +213,7 @@ class LeafNode extends Node {
         path: this.path,
         offset: head,
         type: this.type,
-        where: cons.origin,
+        where: cons.trace,
         template: g.template,
       })
     }
@@ -220,7 +223,7 @@ class LeafNode extends Node {
         path: this.path,
         field: head,
         type: this.type,
-        where: cons.origin,
+        where: cons.trace,
         original: this.because,
         template: g.template,
       })
@@ -236,7 +239,7 @@ class ListNode extends Node {
 
   constructor(
     path: Path,
-    because: Span,
+    because: ContextTrace,
     constraints: Constraint[],
     child: Node
   ) {
@@ -259,7 +262,7 @@ class ListNode extends Node {
       throw errors.typeMismatchError({
         path: this.path,
         original: { type: this.derrive(), where: this.because },
-        conflict: { type: cons.atomicType, where: cons.origin },
+        conflict: { type: cons.atomicType, where: cons.trace },
         template: g.template,
       })
     }
@@ -283,7 +286,7 @@ class ListNode extends Node {
         path: this.path,
         field: head,
         type: this.derrive(),
-        where: cons.origin,
+        where: cons.trace,
         original: this.because,
         template: g.template,
       })
@@ -300,7 +303,7 @@ class TupleNode extends Node {
 
   constructor(
     path: Path,
-    because: Span,
+    because: ContextTrace,
     constraints: Constraint[],
     members: TupleNode['members'],
     bookmark: AssumptionBookmark
@@ -332,7 +335,7 @@ class TupleNode extends Node {
       throw errors.typeMismatchError({
         path: this.path,
         original: { type: this.derrive(), where: this.because },
-        conflict: { type: cons.atomicType, where: cons.origin },
+        conflict: { type: cons.atomicType, where: cons.trace },
         template: g.template,
       })
     }
@@ -359,7 +362,7 @@ class TupleNode extends Node {
         path: this.path,
         field: head,
         type: this.derrive(),
-        where: cons.origin,
+        where: cons.trace,
         original: this.because,
         template: g.template,
       })
@@ -375,7 +378,7 @@ class FieldNode extends Node {
 
   constructor(
     path: Path,
-    because: Span,
+    because: ContextTrace,
     constraints: Constraint[],
     pairs: FieldNode['pairs']
   ) {
@@ -405,7 +408,7 @@ class FieldNode extends Node {
       throw errors.typeMismatchError({
         path: this.path,
         original: { type: this.derrive(), where: this.because },
-        conflict: { type: cons.atomicType, where: cons.origin },
+        conflict: { type: cons.atomicType, where: cons.trace },
         template: g.template,
       })
     }
@@ -415,7 +418,7 @@ class FieldNode extends Node {
         path: this.path,
         offset: head,
         type: this.derrive(),
-        where: cons.origin,
+        where: cons.trace,
         template: g.template,
       })
     }
