@@ -73,6 +73,15 @@ export const unsupportedFieldError = (params: {
     where: params.where,
     parts: [
       report.text(
+        '`$0` was used as a `$1` on line $2 but as an `Object` was used on line $3',
+        [
+          params.path.toString(),
+          params.type.toString(),
+          params.original.start.line.toString(),
+          params.where.start.line.toString(),
+        ]
+      ),
+      report.text(
         'The value `$0` is not an Object, so has no fields to access on line $1:',
         [params.path.toString(), params.where.start.line.toString()]
       ),
