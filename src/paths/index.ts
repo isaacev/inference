@@ -41,6 +41,13 @@ export default class Path {
     }
   }
 
+  public cut(path: Path): Path | null {
+    if (this.hasPrefix(path)) {
+      return new Path(this.segments.slice(path.length()))
+    }
+    return null
+  }
+
   public concat(append: Path | Segment | string[]): Path {
     if (Array.isArray(append)) {
       return this.concat(Path.fromFields(append))

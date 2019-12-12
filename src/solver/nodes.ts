@@ -22,6 +22,7 @@ import Dict from '~/types/dict'
 // Assumption management
 import { Lessons, AssumptionBookmark } from './assumptions'
 import { Snapshot } from './inference'
+import Segment from '~/paths/segments'
 
 interface Globals {
   template: string
@@ -233,6 +234,8 @@ class LeafNode extends Node {
   }
 }
 
+const notNull = <T>(t: T | null): t is T => t !== null
+
 class ListNode extends Node {
   public readonly kind = 'list'
   public readonly child: Node
@@ -248,7 +251,14 @@ class ListNode extends Node {
   }
 
   derrive(): Type {
-    return new List(this.child.derrive())
+    const staticOffsets = this.constraints
+      .map(c => c.path.cut(this.path))
+      .filter(notNull)
+      .map(p => p.head())
+      .filter(notNull)
+      .filter((s: Segment): s is Offset => s instanceof Offset)
+      .map(o => (o instanceof StaticOffset ? o.offset : 0))
+    return new List(this.child.derrive(), Math.max(...staticOffsets))
   }
 
   extend(g: Globals, along: Path, cons: Constraint): Node {
