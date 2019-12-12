@@ -17,6 +17,7 @@ import Bool from '~/types/bool'
 import Textbox from '~/components/inputs/textbox'
 import Repeater from '~/components/inputs/repeater'
 import Checkbox from '~/components/inputs/checkbox'
+import { StaticOffset } from '~/paths/segments/offset'
 
 interface Props {
   path: Path
@@ -46,7 +47,16 @@ export default class Any extends React.Component<Props> {
         />
       )
     } else if (this.props.type instanceof Tuple) {
-      return 'tuple'
+      return this.props.type.members.map((member, i) => {
+        return (
+          <Any
+            key={i}
+            path={this.props.path.concat(new StaticOffset(i))}
+            type={member}
+            readonly={this.props.readonly}
+          />
+        )
+      })
     } else if (this.props.type instanceof Num) {
       return 'num'
     } else if (this.props.type instanceof Bool) {
