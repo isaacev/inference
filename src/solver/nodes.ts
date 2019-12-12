@@ -105,7 +105,7 @@ class UnknownNode extends Node {
       )
     }
 
-    const nextNode = Node.create(g, this.path.concat(head), rest.rest(), cons)
+    const nextNode = Node.create(g, this.path.concat(head), rest, cons)
 
     if (head instanceof Offset) {
       const shouldBeList = g.lessons.shouldBe(this.path, List)
@@ -445,7 +445,7 @@ class FieldNode extends Node {
       } else {
         const newPair = {
           segment: head,
-          node: Node.create(g, this.path.concat(head), rest.rest(), cons),
+          node: Node.create(g, this.path.concat(head), rest, cons),
         }
 
         const updatedPairs = this.pairs.concat(newPair)
