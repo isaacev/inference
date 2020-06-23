@@ -257,7 +257,7 @@ class ListNode extends Node {
       .map(p => p.head())
       .filter(notNull)
       .filter((s: Segment): s is Offset => s instanceof Offset)
-      .map(o => (o instanceof StaticOffset ? o.offset : 0))
+      .map(o => (o instanceof StaticOffset ? o.offset + 1 : 0))
     return new List(this.child.derrive(), Math.max(...staticOffsets))
   }
 
